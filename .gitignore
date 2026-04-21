@@ -139,6 +139,7 @@ README_LOCAL.md
 docker-compose.yml
 .env.dev
 .env.docker
+.env
 /reports
 /results_security
 bench-security.sh
