@@ -158,6 +158,9 @@ const ProductsPoliciesService = require('./services/postgres/ProductPoliciesServ
 // Reviews Service
 const ReviewsService = require('./services/postgres/ReviewsService');
 
+// Health
+const health = require('./api/health');
+
 const init = async () => {
   const cacheService = new CacheService();
   const userRolesService = new UserRolesService();
@@ -249,6 +252,9 @@ const init = async () => {
     },
     {
       plugin: docs,
+    },
+    {
+      plugin: health,
     },
     {
       plugin: contacts,
