@@ -144,4 +144,5 @@ docker-compose.yml
 /results_security
 bench-security.sh
 metrics-table-flex.js
+coverage
 
