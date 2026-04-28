@@ -1,1 +1,0 @@
-console.log('Database password is: ', typeof process.env.PGPASSWORD); // Debug line
