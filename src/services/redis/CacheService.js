@@ -5,7 +5,7 @@ const InvariantError = require('../../exceptions/InvariantError');
 const { createDatabasePool } = require('../../utils/config');
 const { createRedisConfig } = require('../../utils/redisConfig');
 
-/** ----------------- Engines ----------------- **/
+/** ----------------- Engines ----------------- * */
 class RedisEngine {
   constructor() {
     const cfg = createRedisConfig();
@@ -13,17 +13,20 @@ class RedisEngine {
     this._client.on('error', (err) => console.error('Redis error:', err));
     this._connected = false;
   }
+
   async _connect() {
     if (!this._connected || !this._client.isOpen) {
       await this._client.connect();
       this._connected = true;
     }
   }
+
   async set(key, value, expirationInSecond = 1800) {
     await this._connect();
     const payload = typeof value === 'string' ? value : JSON.stringify(value);
     await this._client.set(key, payload, { EX: expirationInSecond });
   }
+
   async get(key) {
     await this._connect();
     const val = await this._client.get(key);
@@ -34,10 +37,12 @@ class RedisEngine {
       return val;
     }
   }
+
   async delete(key) {
     await this._connect();
     await this._client.del(key);
   }
+
   async flush() {
     await this._connect();
     await this._client.flushAll();
@@ -101,21 +106,23 @@ class PostgresEngine {
 
 class NoopEngine {
   async set() {}
+
   async get() {
     throw new NotFoundError('Data not found');
   }
+
   async delete() {}
+
   async flush() {}
 }
 
-/** ----------------- Facade ----------------- **/
+/** ----------------- Facade ----------------- * */
 class CacheService {
   constructor() {
     const provider = (process.env.CACHE_PROVIDER || 'redis').toLowerCase();
-    this._engine =
-      provider === 'redis'
-        ? new RedisEngine()
-        : provider === 'db'
+    this._engine = provider === 'redis'
+      ? new RedisEngine()
+      : provider === 'db'
         ? new PostgresEngine()
         : new NoopEngine();
 
@@ -125,12 +132,15 @@ class CacheService {
   set(k, v, ttl) {
     return this._engine.set(k, v, ttl);
   }
+
   get(k) {
     return this._engine.get(k);
   }
+
   delete(k) {
     return this._engine.delete(k);
   }
+
   flush() {
     return this._engine.flush();
   }

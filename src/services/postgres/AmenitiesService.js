@@ -34,7 +34,6 @@ class AmenitiesService {
   async getAllAmenities(type, category, params = null) {
     const table = 'amenities';
     let query = `SELECT ${table}.id, types.title AS type, ${table}.category, ${table}.title FROM ${table} LEFT JOIN types ON ${table}.type_id = types.id`;
-    const queryParams = [];
 
     if (type) {
       query += ` WHERE types.title = '${type}'`; // $1
@@ -98,7 +97,7 @@ class AmenitiesService {
     return result.rows[0];
   }
 
-  async updateAmenityById(id, typeId = null, payload) {
+  async updateAmenityById(id, payload, typeId = null) {
     const fields = [];
     const values = [];
     let index = 1;
@@ -120,7 +119,7 @@ class AmenitiesService {
       throw new InvariantError('No field to update');
     }
 
-    fields.push(`_updated_date = CURRENT_TIMESTAMP`);
+    fields.push('_updated_date = CURRENT_TIMESTAMP');
     const query = {
       text: `UPDATE amenities SET ${fields.join(
         ', ',

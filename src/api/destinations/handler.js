@@ -53,6 +53,7 @@ class DestinationsHandler {
       result: categories,
     };
   }
+
   async getAllDestinationsHandler(request) {
     const result = await this._destinationsService.getAllDestinations(request.query);
     return {
@@ -60,6 +61,7 @@ class DestinationsHandler {
       ...result,
     };
   }
+
   async updateDestinationHandler(request, h) {
     this._DestinationsValidator.validateUUIDParams(request.params);
     const { id } = request.params;
@@ -74,6 +76,7 @@ class DestinationsHandler {
       })
       .code(200);
   }
+
   async deleteDestinationHandler(request, h) {
     this._DestinationsValidator.validateUUIDParams(request.params);
     const { id } = request.params;

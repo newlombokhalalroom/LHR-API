@@ -65,7 +65,7 @@ const ClientsFacilitiesValidator = require('./validators/clientsFacilities');
 // locations
 const LocationsService = require('./services/postgres/LocationsService');
 
-//advertisements
+// advertisements
 const advertisements = require('./api/advertisements');
 const AdvertisementsService = require('./services/postgres/AdvertisementsService');
 const AdvertisementsValidator = require('./validators/advertisements');

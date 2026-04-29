@@ -43,6 +43,7 @@ class PoliciesHandler {
       result,
     };
   }
+
   async deletePolicyHandler(request, h) {
     this._policiesValidator.validatePolicyParams(request.params);
     const { id } = request.params;
@@ -56,6 +57,7 @@ class PoliciesHandler {
     response.code(200);
     return response;
   }
+
   async updatePolicyHandler(request, h) {
     this._policiesValidator.validatePolicyParams(request.params);
     this._policiesValidator.validateUpdatePoliciesPayload(request.payload);

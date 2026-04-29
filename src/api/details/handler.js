@@ -104,12 +104,13 @@ class DetailsHandler {
       message: 'Detail categories deleted successfully',
     };
   }
+
   async putDetailHandler(request, h) {
     this._detailsValidator.validateDetailCategoriesParams(request.params);
     this._detailsValidator.validateUpdateDetailPayload(request.payload);
 
     const { id } = request.params;
-    const payload = request.payload;
+    const { payload } = request;
 
     if ('title' in payload) {
       await this._detailsService.verifyNewDetail(payload.title);
@@ -141,6 +142,7 @@ class DetailsHandler {
       })
       .code(200);
   }
+
   async getAllDetailsHandler(request, h) {
     const details = await this._detailsService.getAllDetails();
 
@@ -153,6 +155,7 @@ class DetailsHandler {
       })
       .code(200);
   }
+
   async deleteDetailHandler(request, h) {
     // reuse validator params yang sama seperti PUT (id di params)
     this._detailsValidator.validateDetailCategoriesParams(request.params);

@@ -60,6 +60,7 @@ class BalancesService {
 
     return balance;
   }
+
   async getTotalLiabilityExcludeMe(currentUserId) {
     const q = await this._pool.query(
       `SELECT COALESCE(SUM(amount), 0) AS total_liability,

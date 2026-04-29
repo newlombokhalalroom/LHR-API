@@ -112,6 +112,7 @@ class DestinationsService {
     const categories = result.rows.map((row) => row.category);
     return categories;
   }
+
   async getAllDestinations(params = null) {
     const table = 'destinations';
 
@@ -138,7 +139,7 @@ class DestinationsService {
     }
 
     if (filters.length > 0) {
-      baseQuery += ' AND ' + filters.join(' AND ');
+      baseQuery += ` AND ${filters.join(' AND ')}`;
     }
 
     baseQuery += ' ORDER BY _created_date DESC';
@@ -157,6 +158,7 @@ class DestinationsService {
       result: filtered.result.rows,
     };
   }
+
   async updateDestination(id, payload) {
     // Ambil data lama
     const queryOld = {
@@ -214,6 +216,7 @@ class DestinationsService {
     }
     return result.rows[0];
   }
+
   async deleteDestination(id) {
     const query = {
       text: 'DELETE FROM destinations WHERE id = $1 RETURNING id',

@@ -339,13 +339,11 @@ class OrdersHandler {
       this.scheduleCancellation(orderId, process.env.AUTO_CANCEL_DURATION);
 
       // sending email
-      this.sendInvoiceToUsersAndClient(user_details_id, client_details_id, orderId).catch((error) =>
-        console.log(error),
-      );
+      this.sendInvoiceToUsersAndClient(user_details_id, client_details_id, orderId).catch((error) => console.log(error));
     } else if (
-      transactionStatus === 'cancel' ||
-      transactionStatus === 'deny' ||
-      transactionStatus === 'expire'
+      transactionStatus === 'cancel'
+      || transactionStatus === 'deny'
+      || transactionStatus === 'expire'
     ) {
       await this._ordersService.putOrderStatus('cancelled', orderId);
     } else if (transactionStatus === 'pending') {
@@ -577,6 +575,7 @@ class OrdersHandler {
     response.code(201);
     return response;
   }
+
   async getAllOrdersHandler(request, h) {
     const { page, limit } = request.query;
 
@@ -598,6 +597,7 @@ class OrdersHandler {
       })
       .code(200);
   }
+
   async putOrderHandler(request, h) {
     this._ordersValidator.validateUpdateOrderPayload(request.payload);
 
@@ -612,6 +612,7 @@ class OrdersHandler {
       })
       .code(200);
   }
+
   async deleteOrderHandler(request, h) {
     const { id } = request.params;
 
@@ -624,6 +625,7 @@ class OrdersHandler {
       })
       .code(200);
   }
+
   async testCacheHandler(request, h) {
     const cacheService = this._cacheService;
     const key = 'test-cache';
@@ -644,6 +646,7 @@ class OrdersHandler {
       });
     }
   }
+
   async getSuperAdminOrderByIdHandler(request, h) {
     this._ordersValidator.validateUUIDParams(request.params);
 
