@@ -47,6 +47,13 @@ const UsersValidator = {
     }
   },
 
+  validateUserParams: (params) => {
+    const validationResult = UserParamsSchema.validate(params);
+    if (validationResult.error) {
+      throw new InvariantError(validationResult.error.message);
+    }
+  },
+
   validateUserQuery: (query) => {
     const { error } = UserQuerySchema.validate(query);
     if (error) throw new InvariantError(error.message);
