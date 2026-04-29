@@ -39,8 +39,10 @@ const ClientDeletePicturesSchema = Joi.object({
 
 const ClientLocationSchema = Joi.object({
   address: Joi.string().max(100).required(),
-  latitude: Joi.number().min(-90).max(90).required().strict(true),
-  longitude: Joi.number().min(-180).max(180).required().strict(true),
+  latitude: Joi.number().min(-90).max(90).required()
+    .strict(true),
+  longitude: Joi.number().min(-180).max(180).required()
+    .strict(true),
   city: Joi.string().max(100).required(),
   province: Joi.string().max(100).required(),
 });

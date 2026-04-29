@@ -46,10 +46,6 @@ const UsersValidator = {
       throw new InvariantError(validationResult.error.message);
     }
   },
-  validateUserParams: (params) => {
-    const { error } = UserParamsSchema.validate(params);
-    if (error) throw new InvariantError(error.message);
-  },
 
   validateUserQuery: (query) => {
     const { error } = UserQuerySchema.validate(query);

@@ -17,8 +17,7 @@ class CardsHandler {
     const { id: credentialId } = request.auth.credentials;
 
     const { id: cardId } = await this._cardsService.getCard(credentialId);
-    const { id: balanceId, amount: balanceAmount } =
-      await this._balancesService.getBalanceByUserId(credentialId);
+    const { id: balanceId, amount: balanceAmount } = await this._balancesService.getBalanceByUserId(credentialId);
     const { amount } = request.payload;
 
     if (amount > balanceAmount) {
@@ -114,6 +113,7 @@ class CardsHandler {
       })
       .code(200);
   }
+
   async getTotalLiabilityHandler(request, h) {
     const me = request.auth.credentials?.id;
     if (!me) {

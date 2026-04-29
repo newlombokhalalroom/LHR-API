@@ -114,9 +114,8 @@ class ProductsHandler {
 
     const { id: credentialId } = request.auth.credentials;
     const { id: clientId } = await this._clientsService.getClientIdbyOwnerId(credentialId);
-    const amenitiesId =
-      (!request.payload.amenities?.find((_item) => !_item.id) && request.payload.amenities) ||
-      (await this._amenitiesService.getAmenityIdByTitle(request.payload.amenities));
+    const amenitiesId = (!request.payload.amenities?.find((_item) => !_item.id) && request.payload.amenities)
+      || (await this._amenitiesService.getAmenityIdByTitle(request.payload.amenities));
     const arrayOfAmenitiesId = amenitiesId.map((obj) => obj.id);
     const productDetails = request.payload.details;
     const arrayOfDetailTitle = productDetails.map((obj) => obj.title);

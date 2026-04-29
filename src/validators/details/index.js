@@ -32,10 +32,6 @@ const DetailCategoriesValidator = {
     const result = DetailCategoriesParamsSchema.validate(params);
     if (result.error) throw new InvariantError(result.error.message);
   },
-  validateUpdateDetailPayload: (payload) => {
-    const result = UpdateDetailPayloadSchema.validate(payload);
-    if (result.error) throw new InvariantError(result.error.message);
-  },
 };
 
 module.exports = DetailCategoriesValidator;

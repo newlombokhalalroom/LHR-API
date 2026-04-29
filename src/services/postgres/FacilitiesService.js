@@ -50,8 +50,7 @@ class FacilitiesService {
   }
 
   async getAllFacilities({ type, category }) {
-    let queryText =
-      'SELECT f.id, t.title AS type, f.category, f.title FROM facilities f LEFT JOIN types t ON f.type_id = t.id';
+    let queryText = 'SELECT f.id, t.title AS type, f.category, f.title FROM facilities f LEFT JOIN types t ON f.type_id = t.id';
     const queryParams = [];
 
     if (type) {
@@ -126,7 +125,7 @@ class FacilitiesService {
     }
 
     // selalu update _updated_date
-    updates.push(`_updated_date = CURRENT_TIMESTAMP`);
+    updates.push('_updated_date = CURRENT_TIMESTAMP');
 
     const query = {
       text: `UPDATE facilities SET ${updates.join(', ')} WHERE id = $${index} RETURNING id`,

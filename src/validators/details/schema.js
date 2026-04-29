@@ -30,5 +30,4 @@ module.exports = {
   DetailCategoriesPayloadSchema,
   UpdateDetailCategoriesPayloadSchema,
   DetailCategoriesParamsSchema,
-  UpdateDetailPayloadSchema,
 };
