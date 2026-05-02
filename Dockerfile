@@ -1,11 +1,13 @@
 FROM node:18-alpine
 
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 # Create app directory
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json pnpm-lock.yaml ./
 
-RUN npm ci --omit=dev
+RUN pnpm install --prod --frozen-lockfile
 
 COPY . .
 
