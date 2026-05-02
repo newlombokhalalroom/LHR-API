@@ -116,7 +116,7 @@ jobs:
 
             echo "--- Health Checking (Port 5000) ---"
             # Pastikan port 5000 adalah port yang digunakan oleh API Anda
-            until curl -s -o /dev/null -w "%{http_code}" http://localhost:5000 | grep -q 200; do
+            until curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 | grep -q 200; do
               printf "."
               sleep 1
             done
