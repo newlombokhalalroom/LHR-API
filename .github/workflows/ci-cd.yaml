@@ -1,0 +1,129 @@
+name: CI-CD Pipeline API
+on:
+  push:
+    branches: ['production']
+  pull_request:
+    branches: ['production']
+
+jobs:
+  # JOB 1: Lint & Test (Verifikasi kualitas kode)
+  lint-and-test:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      # - name: Run Linter
+      #   run: pnpm lint
+
+      - name: Run Tests with Coverage
+        run: pnpm vitest run --coverage
+
+  # JOB 2: Build & Push (Jalan di PR untuk verifikasi, dan di Push untuk finalisasi)
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [lint-and-test]
+    outputs:
+      image_tag: ${{ steps.vars.outputs.sha_short }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Membuat tag unik menggunakan Short SHA
+      - name: Set Short SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build & Push ke Docker Hub
+      - name: Build & Push Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            lombokhalalroom/lombok-halal-room-api:latest
+            lombokhalalroom/lombok-halal-room-api:${{ steps.vars.outputs.sha_short }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # JOB 3: Deployment (HANYA jalan saat Merge/Push ke production)
+  deploy-production:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Short SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Copy docker-compose to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          source: 'docker-compose.yml'
+          target: '/opt/lhr-api'
+
+      - name: SSH Deploy & Atomic Update
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            set -e
+            start=$(date +%s)
+            cd /opt/lhr-api
+
+            # Mengganti tag image secara dinamis di file docker-compose.yml
+            sed -i "s|image: lombokhalalroom/lombok-halal-room-api:.*|image: lombokhalalroom/lombok-halal-room-api:${{ steps.vars.outputs.sha_short }}|g" docker-compose.yml
+
+            echo "--- Updating Container to Version: ${{ steps.vars.outputs.sha_short }} ---"
+            docker compose pull
+            docker compose up -d --remove-orphans
+
+            echo "--- Health Checking (Port 3000) ---"
+            # Pastikan port 5000 adalah port yang digunakan oleh API Anda
+            until curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 | grep -q 200; do
+              printf "."
+              sleep 1
+            done
+
+            end=$(date +%s)
+            echo -e "\n===================================================="
+            echo "DEPLOYMENT SUCCESS!"
+            echo "Deployment Time: $((end - start)) seconds"
+            echo "===================================================="
+            docker image prune -f
