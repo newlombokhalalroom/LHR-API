@@ -52,26 +52,26 @@ pipeline {
             steps {
                 sshagent(credentials: [env.SSH_CRED]) {
                     sh """
+                        ssh -o StrictHostKeyChecking=no ${env.VPS_USER}@${env.VPS_HOST} "mkdir -p ${env.TARGET_DIR}"
+                        scp -o StrictHostKeyChecking=no docker-compose.yml ${env.VPS_USER}@${env.VPS_HOST}:${env.TARGET_DIR}/docker-compose.yml
                         ssh -o StrictHostKeyChecking=no ${env.VPS_USER}@${env.VPS_HOST} << 'EOF'
                         set -e
                         cd ${env.TARGET_DIR}
 
-                        # Otomatisasi penggantian tag image di docker-compose.yml
+                        # Sekarang sed tidak akan error karena file sudah di-copy di atas
                         sed -i "s|image: ${env.DOCKER_IMAGE}:.*|image: ${env.DOCKER_IMAGE}:${env.SHORT_SHA}|g" docker-compose.yml
 
                         echo "--- Deploying API Version: ${env.SHORT_SHA} ---"
                         docker compose pull
                         docker compose up -d --remove-orphans
 
-                        # Pastikan API berjalan normal di port 3000
                         until curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 | grep -q 200; do
                             printf "."
                             sleep 2
                         done
-
                         echo -e "\nDEPLOYMENT API SUCCESS!"
                         docker image prune -f
-EOF
+        EOF
                     """
                 }
             }
