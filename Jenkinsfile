@@ -20,7 +20,7 @@ pipeline {
                     // Verifikasi kode sebelum build
                     sh 'pnpm install --frozen-lockfile'
                     // sh 'pnpm lint'
-                    // sh 'pnpm vitest run --coverage'
+                    sh 'pnpm vitest run --coverage'
                 }
             }
         }
