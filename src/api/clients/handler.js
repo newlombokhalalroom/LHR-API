@@ -272,14 +272,38 @@ class ClientsHandler {
 
     const { id: credentialId } = request.auth.credentials;
     const { id: clientId } = await this._clientsService.getClientIdbyOwnerId(credentialId);
+    const client = await this._clientsService.getClientById(clientId);
+    const typeId = client.type_id;
 
     const { policies } = request.payload;
     const policyTitles = policies.map((obj) => obj.title);
 
-    const policyIds = await this._policiesService.getPolicyIdsByTitles(policyTitles);
+    let policyIds = [];
+    try {
+      policyIds = await this._policiesService.getPolicyIdsByTitles(policyTitles);
+    } catch (error) {
+      // Jika tidak ada sama sekali yang ditemukan, kita abaikan errornya agar bisa dibuat otomatis
+      if (error.name !== 'NotFoundError') throw error;
+    }
+
+    // Auto-create missing policies (Pencocokan case-insensitive)
+    const foundTitles = policyIds.map((p) => p.title.toLowerCase());
+    const missingPolicies = policies.filter((p) => !foundTitles.includes(p.title.toLowerCase()));
+
+    const newPolicies = await Promise.all(
+      missingPolicies.map((missing) => this._policiesService.addPolicy(typeId, {
+        title: missing.title,
+        category: 'regular',
+        description: missing.details || missing.title,
+      })),
+    );
+
+    newPolicies.forEach((newPolicy) => {
+      policyIds.push({ id: newPolicy.id, title: newPolicy.title });
+    });
 
     const clientPolicies = policyIds.map((policy) => {
-      const match = policies.find((obj) => obj.title === policy.title);
+      const match = policies.find((obj) => obj.title.toLowerCase() === policy.title.toLowerCase());
       return {
         id: policy.id,
         details: match ? match.details : 0,

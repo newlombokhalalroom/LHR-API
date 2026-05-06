@@ -11,7 +11,8 @@
     "update:migrate": "node-pg-migrate -m './update-migrations'",
     "metrics": "plato -r -x \"(test|__tests__|scripts|node_modules|dist|migrations|update-migrations)\" -d reports/ src/ && node metrics-table-flex.js",
     "testing": "./local-bench.sh",
-    "security:testing": "ENV_FILE=.env.testing BRUTE_FORCE_REQUESTS=50 BRUTE_FORCE_PARALLEL=5 bash ./bench-security.sh"
+    "security:testing": "ENV_FILE=.env.testing BRUTE_FORCE_REQUESTS=50 BRUTE_FORCE_PARALLEL=5 bash ./bench-security.sh",
+    "test": "vitest run --coverage"
   },
   "repository": {
     "type": "git",

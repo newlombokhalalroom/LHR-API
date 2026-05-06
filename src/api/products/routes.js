@@ -317,48 +317,45 @@ const routes = (handler) => [
     },
   },
 
-  // NEXT DEVELOPMENT START
-
-  // {
-  //   method: 'POST',
-  //   path: '/products/{productId}/options',
-  //   handler: handler.postProductOptionsHandler,
-  //   config: {
-  //     auth: {
-  //       strategy: 'lombokhalalroom_jwt',
-  //       scope: 'admin',
-  //     },
-  //   },
-  // },
-  // {
-  //   method: 'PUT',
-  //   path: '/products/{productId}/options/{optionId}',
-  //   handler: handler.putProductOptionsHandler,
-  //   config: {
-  //     auth: {
-  //       strategy: 'lombokhalalroom_jwt',
-  //       scope: 'admin',
-  //     },
-  //   },
-  // },
-  // {
-  //   method: 'DELETE',
-  //   path: '/products/{productId}/options/{optionId}',
-  //   handler: handler.deleteProductOptionsHandler,
-  //   config: {
-  //     auth: {
-  //       strategy: 'lombokhalalroom_jwt',
-  //       scope: 'admin',
-  //     },
-  //   },
-  // },
-  // {
-  //   method: 'GET',
-  //   path: '/products/{productId}/options',
-  //   handler: handler.getProductOptionsByProductId,
-  // },
-
-  // NEXT DEVELOPMENT END
+  // Product Options
+  {
+    method: 'POST',
+    path: '/products/{productId}/options',
+    handler: handler.postProductOptionsHandler,
+    config: {
+      auth: {
+        strategy: 'lombokhalalroom_jwt',
+        scope: 'admin',
+      },
+    },
+  },
+  {
+    method: 'PUT',
+    path: '/products/{productId}/options/{optionId}',
+    handler: handler.putProductOptionsHandler,
+    config: {
+      auth: {
+        strategy: 'lombokhalalroom_jwt',
+        scope: 'admin',
+      },
+    },
+  },
+  {
+    method: 'DELETE',
+    path: '/products/{productId}/options/{optionId}',
+    handler: handler.deleteProductOptionsHandler,
+    config: {
+      auth: {
+        strategy: 'lombokhalalroom_jwt',
+        scope: 'admin',
+      },
+    },
+  },
+  {
+    method: 'GET',
+    path: '/products/{productId}/options',
+    handler: handler.getProductOptionsByProductId,
+  },
 ];
 
 module.exports = routes;

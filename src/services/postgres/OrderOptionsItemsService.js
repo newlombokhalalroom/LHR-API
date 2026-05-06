@@ -1,4 +1,3 @@
-const NotFoundError = require('../../exceptions/NotFoundError');
 const { createDatabasePool } = require('../../utils/config');
 
 class OrderOptionsItemsService {

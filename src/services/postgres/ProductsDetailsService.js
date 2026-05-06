@@ -20,7 +20,7 @@ class ProductsDetailsService {
     )?.rows?.map((_item) => _item?.detail_id);
     const newDetails = arrayOfObjectsDetails.filter((_item) => !catchExisting?.includes(_item.id));
     const removedDetails = catchExisting.filter(
-      (_item) => !arrayOfObjectsDetails?.find((__item) => __item.id == _item),
+      (_item) => !arrayOfObjectsDetails?.find((__item) => __item.id === _item),
     );
 
     if (newDetails?.length > 0) {

@@ -1,8 +1,6 @@
 const {
   UserUpdatePayloadSchema,
   UserParamsSchema,
-  UserCreatePayloadSchema,
-  RoleParamsSchema,
 } = require('../../validators/users');
 
 const routes = (handler) => [
