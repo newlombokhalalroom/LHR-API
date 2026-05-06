@@ -36,7 +36,7 @@ class AmenitiesService {
     let query = `SELECT ${table}.id, types.title AS type, ${table}.category, ${table}.title FROM ${table} LEFT JOIN types ON ${table}.type_id = types.id`;
 
     if (type) {
-      query += ` WHERE types.title = '${type}'`; // $1
+      query += ` WHERE LOWER(types.title) = LOWER('${type}')`;
       // queryParams.push(type);
     }
 

@@ -164,7 +164,7 @@ class OrdersHandler {
 
     await this._ordersService.verifyOrderOwner(credentialId, orderId);
     const order = await this._ordersService.getOrderById(orderId);
-    const items = await this._orderItemsService.getOrderItems(orderId);
+    await this._orderItemsService.getOrderItems(orderId);
 
     return {
       status: true,

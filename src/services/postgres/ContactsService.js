@@ -9,10 +9,12 @@ class ContactsService {
     this._cacheService = cacheService;
   }
 
-  async verifyNewEmail(email) {
+  async verifyNewEmail(email, userId = null) {
     const query = {
-      text: 'SELECT * FROM contacts WHERE email = $1',
-      values: [email],
+      text: userId
+        ? 'SELECT * FROM contacts WHERE email = $1 AND user_id != $2'
+        : 'SELECT * FROM contacts WHERE email = $1',
+      values: userId ? [email, userId] : [email],
     };
     const result = await this._pool.query(query);
     if (result.rows.length > 0) {
@@ -47,7 +49,7 @@ class ContactsService {
     let registeredEmailVerifiedStatus = await this.getEmailVerifiedStatusByUserId(userId);
 
     if (email !== registeredEmail) {
-      await this.verifyNewEmail(email);
+      await this.verifyNewEmail(email, userId);
       registeredEmailVerifiedStatus = false;
     }
 

@@ -15,6 +15,7 @@ const {
   ProductPoliciesSchema,
   UpdatePolicySchema,
   GetReviewsQuerySchema,
+  PostTourSchedulePayloadSchema,
 } = require('./schema');
 
 const ProductsValidator = {
@@ -149,6 +150,12 @@ const ProductsValidator = {
 
   validateGetReviewsQuery: (query) => {
     const validationResult = GetReviewsQuerySchema.validate(query);
+    if (validationResult.error) {
+      throw new InvariantError(validationResult.error.message);
+    }
+  },
+  validateTourSchedulePayload: (payload) => {
+    const validationResult = PostTourSchedulePayloadSchema.validate(payload);
     if (validationResult.error) {
       throw new InvariantError(validationResult.error.message);
     }

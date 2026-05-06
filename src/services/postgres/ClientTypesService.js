@@ -37,7 +37,7 @@ class ClientTypesService {
 
   async getClientTypeId(title) {
     const query = {
-      text: 'SELECT id FROM types WHERE title = $1',
+      text: 'SELECT id FROM types WHERE LOWER(title) = LOWER($1)',
       values: [title],
     };
     const result = await this._pool.query(query);
