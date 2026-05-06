@@ -364,12 +364,14 @@ class UsersService {
       throw error;
     }
   }
+
   async verifyNewEmail(email) {
     const q = await this._pool.query('SELECT user_id FROM contacts WHERE email = $1 LIMIT 1', [
       email,
     ]);
     if (q.rowCount) throw new InvariantError('Email sudah digunakan');
   }
+
   async addUserByRoleTitle(
     roleTitle,
     {

@@ -105,6 +105,7 @@ class DetailCategoriesService {
       throw new InvariantError('Failed to delete detail category');
     }
   }
+
   async getAllDetailCategories() {
     const result = await this._pool.query(`
       SELECT id, title, _created_date, _updated_date

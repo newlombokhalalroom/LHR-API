@@ -50,7 +50,7 @@ class AmenitiesHandler {
     this._amenitiesValidator.validateUpdateAmenitiesPayload(request.payload);
 
     const { id } = request.params;
-    const payload = request.payload;
+    const { payload } = request;
 
     if ('title' in payload) {
       const { title } = await this._amenitiesService.getAmenityById(id);
@@ -64,7 +64,7 @@ class AmenitiesHandler {
       typeId = await this._typesService.getClientTypeId(payload.type);
     }
 
-    const amenity = await this._amenitiesService.updateAmenityById(id, typeId, payload);
+    const amenity = await this._amenitiesService.updateAmenityById(id, payload, typeId);
 
     return {
       status: true,

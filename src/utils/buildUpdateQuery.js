@@ -5,16 +5,16 @@ function buildUpdateQuery(table, id, payload, mapping = {}) {
   let index = 1;
 
   for (const [key, value] of Object.entries(payload)) {
-    if (mapping[key] === false) continue; // skip kolom yang tidak boleh
-
-    const column = mapping[key] || key;
-    fields.push(`${column} = $${index++}`);
-    values.push(value);
+    if (mapping[key] !== false) {
+      const column = mapping[key] || key;
+      fields.push(`${column} = $${index++}`);
+      values.push(value);
+    }
   }
 
   if (fields.length === 0) return null;
 
-  fields.push(`_updated_date = CURRENT_TIMESTAMP`);
+  fields.push('_updated_date = CURRENT_TIMESTAMP');
 
   return {
     query: `UPDATE ${table} SET ${fields.join(', ')} WHERE id = $${index}`,

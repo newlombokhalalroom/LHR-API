@@ -1,30 +1,54 @@
 {
-    "env": {
-        "browser": true,
-        "commonjs": true,
-        "es2021": true,
-        "node": true
-    },
-    "extends": "airbnb-base",
-    "overrides": [
-    ],
-    "parserOptions": {
-        "ecmaVersion": "latest"
-    },
-    "rules": {
-        "prefer-const": 0,
-        "linebreak-style": 0,
-        "no-underscore-dangle": 0,
-        "max-len": 0,
-        "camelcase": 0,
-        "no-unused-vars": 1,
-        "object-curly-newline": 0,
-        "import/no-extraneous-dependencies": 1,
-        "newline-per-chained-call" : 1,
-        "operator-linebreak": 1,
-        "no-unsafe-optional-chaining": 0,
-        "no-use-before-define": 1,
-        "no-param-reassign": 1,
-        "no-useless-catch":0
-    }
+  "env": {
+    "browser": true,
+    "commonjs": true,
+    "es2021": true,
+    "node": true
+  },
+  "extends": "airbnb-base",
+  "overrides": [],
+  "parserOptions": {
+    "ecmaVersion": "latest"
+  },
+  // "rules": {
+  //     "prefer-const": 0,
+  //     "linebreak-style": 0,
+  //     "no-underscore-dangle": 0,
+  //     "max-len": 0,
+  //     "camelcase": 0,
+  //     "no-unused-vars": 1,
+  //     "object-curly-newline": 0,
+  //     "import/no-extraneous-dependencies": 1,
+  //     "newline-per-chained-call" : 1,
+  //     "operator-linebreak": 1,
+  //     "no-unsafe-optional-chaining": 0,
+  //     "no-use-before-define": 1,
+  //     "no-param-reassign": 1,
+  //     "no-useless-catch":0
+  // }
+  "rules": {
+    "prefer-const": 0,
+    "linebreak-style": 0,
+    "no-underscore-dangle": 0,
+    "max-len": 0,
+    "camelcase": 0,
+    "no-unused-vars": 1,
+    "object-curly-newline": 0,
+    "import/no-extraneous-dependencies": 1,
+    "newline-per-chained-call": 1,
+    "operator-linebreak": 1,
+    "no-unsafe-optional-chaining": 0,
+    "no-use-before-define": 1,
+    "no-param-reassign": 0,
+    "no-useless-catch": 0,
+    "no-console": 0,
+    "no-plusplus": 0,
+    "class-methods-use-this": 0,
+    "radix": 0,
+    "no-restricted-syntax": 0,
+    "max-classes-per-file": 0,
+    "no-empty-function": 0,
+    "no-nested-ternary": 0,
+    "eqeqeq": 1
+  }
 }

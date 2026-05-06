@@ -365,7 +365,7 @@ class ProductsService {
       values,
     };
 
-    const result = await this._pool.query(query);//20
+    const result = await this._pool.query(query);
 
     result.rows = await Promise.all(
       result.rows?.map(async (product) => {

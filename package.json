@@ -11,10 +11,7 @@
     "update:migrate": "node-pg-migrate -m './update-migrations'",
     "metrics": "plato -r -x \"(test|__tests__|scripts|node_modules|dist|migrations|update-migrations)\" -d reports/ src/ && node metrics-table-flex.js",
     "testing": "./local-bench.sh",
-    "security:testing": "ENV_FILE=.env.testing BRUTE_FORCE_REQUESTS=50 BRUTE_FORCE_PARALLEL=5 bash ./bench-security.sh",
-    "test": "vitest",
-    "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "security:testing": "ENV_FILE=.env.testing BRUTE_FORCE_REQUESTS=50 BRUTE_FORCE_PARALLEL=5 bash ./bench-security.sh"
   },
   "repository": {
     "type": "git",
@@ -28,16 +25,14 @@
   },
   "homepage": "https://github.com/lombokhalalroom/lombok-halal-room-api#readme",
   "devDependencies": {
-    "@babel/core": "^7.29.0",
-    "@babel/preset-env": "^7.29.0",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/coverage-v8": "^4.1.5",
     "eslint": "^8.57.1",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.32.0",
     "nodemon": "^3.1.10",
-    "plato": "^1.4.0",
+    "plato": "^1.7.0",
     "typhonjs-escomplex": "^0.1.0",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.5"
   },
   "dependencies": {
     "@hapi/hapi": "^21.4.3",
