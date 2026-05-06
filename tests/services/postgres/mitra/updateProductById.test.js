@@ -13,7 +13,7 @@ const mockPool = {
   connect: vi.fn().mockResolvedValue(mockClient),
 };
 
-describe('ProductsService :: addProduct', () => {
+describe('ProductsService :: updateProductById', () => {
   let service;
 
   beforeEach(() => {
@@ -22,30 +22,28 @@ describe('ProductsService :: addProduct', () => {
     vi.clearAllMocks();
   });
 
-  it('TCM-1A - ID client valid dan data produk lengkap', async () => {
-    const fakeProduct = { id: 'prod-1', title: 'Product 1', description: 'Desc 1', availability: true, price: 100, units: 5 };
+  it('TCM-2A - ID product tersedia dalam database dan data pembaruan valid', async () => {
+    const fakeUpdate = { title: 'Updated', description: 'Desc', availability: false, price: 200, units: 2 };
     mockClient.query.mockResolvedValueOnce({ rows: [] }); // BEGIN
     mockClient.query.mockResolvedValueOnce({
       rowCount: 1,
-      rows: [fakeProduct],
-    }); // INSERT
+      rows: [{ id: 'prod-1', ...fakeUpdate }],
+    }); // UPDATE
     mockClient.query.mockResolvedValueOnce({ rows: [] }); // COMMIT
 
-    const result = await service.addProduct('client-1', fakeProduct);
+    const result = await service.updateProductById('prod-1', fakeUpdate);
 
-    expect(result).toEqual(fakeProduct);
-    expect(mockClient.query).toHaveBeenCalledWith(expect.objectContaining({
-      text: expect.stringContaining('INSERT INTO products'),
-    }));
+    expect(result).toEqual({ id: 'prod-1', ...fakeUpdate });
     expect(mockClient.release).toHaveBeenCalled();
   });
 
-  it('TCM-1B - ID client valid namun data produk tidak memenuhi ketentuan', async () => {
+  it('TCM-2B - ID product tidak tersedia dalam database', async () => {
     mockClient.query.mockResolvedValueOnce({ rows: [] }); // BEGIN
-    mockClient.query.mockResolvedValueOnce({ rowCount: 0, rows: [] }); // INSERT
+    mockClient.query.mockResolvedValueOnce({ rowCount: 0, rows: [] }); // UPDATE
     mockClient.query.mockResolvedValueOnce({ rows: [] }); // ROLLBACK
 
-    await expect(service.addProduct('client-1', {})).rejects.toThrow('Failed to add product');
+    await expect(service.updateProductById('prod-not-found', {}))
+      .rejects.toThrow('Failed to update product');
     expect(mockClient.release).toHaveBeenCalled();
   });
 });

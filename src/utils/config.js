@@ -1,6 +1,10 @@
 const { Pool } = require('pg');
 
 const createDatabasePool = () => {
+  if (global.__MOCK_POOL__) {
+    return global.__MOCK_POOL__;
+  }
+
   let poolOptions = {};
 
   if (process.env.NODE_ENV === 'test') {
