@@ -37,7 +37,7 @@ class AmenitiesService {
     const queryParams = [];
 
     if (type) {
-      query += ` WHERE types.title = '${type}'`; // $1
+      query += ` WHERE LOWER(types.title) = LOWER('${type}')`;
       // queryParams.push(type);
     }
 

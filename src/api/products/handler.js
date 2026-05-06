@@ -101,6 +101,9 @@ class ProductsHandler {
         result: {
           ...updatedProduct,
           amenities: updateAmenities,
+          // UPDATE US-03 - KISUL
+          trip_detail: request.payload.trip_detail || null,
+          itineraries: request.payload.itineraries || [],
           // pictures: productPictures,
           // details: productDetails,
         },
@@ -149,6 +152,9 @@ class ProductsHandler {
         amenities: arrayOfProductAmenities,
         pictures: arrayOfPicture,
         details: arrayOfDetails,
+        // UPDATE US-03 - KISUL
+        trip_detail: request.payload.trip_detail || null,
+        itineraries: request.payload.itineraries || [],
       },
     });
     response.code(201);
@@ -961,6 +967,23 @@ class ProductsHandler {
   }
 
   // NEXT DEVELOPMENT END
+  async postTourScheduleHandler(request, h) {
+    this._productsValidator.validateTourSchedulePayload(request.payload);
+
+    const { id: credentialId } = request.auth.credentials;
+    const { id: clientId } = await this._clientsService.getClientIdbyOwnerId(credentialId);
+    const { id: productId } = request.params;
+
+    await this._productsService.verifyClientAccess(productId, clientId);
+
+    const scheduleId = await this._productsService.addTourSchedule(productId, request.payload);
+
+    return h.response({
+      status: true,
+      message: 'Jadwal tur berhasil ditambahkan',
+      data: { scheduleId },
+    }).code(201);
+  }
 }
 
 module.exports = ProductsHandler;

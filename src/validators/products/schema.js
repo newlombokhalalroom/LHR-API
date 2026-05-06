@@ -1,5 +1,24 @@
 const Joi = require('joi');
 
+// UPDATE US-03 - KISUL
+const TripDetailSchema = Joi.object({
+  trip_type: Joi.string().valid('Open trip', 'Private trip').required(),
+});
+
+// UPDATE US-03 - KISUL
+const ItinerarySchema = Joi.object({
+  day: Joi.number().integer().min(1).required(),
+  time: Joi.string().required(),
+  activity: Joi.string().required(),
+  description: Joi.string().allow('', null).optional(),
+});
+
+const PostTourSchedulePayloadSchema = Joi.object({
+  total_quota: Joi.number().integer().min(1).required(),
+  departure_date: Joi.date().iso().required(),
+  return_date: Joi.date().iso().min(Joi.ref('departure_date')).required(),
+});
+
 const ProductDetailsSchema = Joi.object({
   id: Joi.string()
     .guid({
@@ -50,6 +69,10 @@ const ProductsPayloadSchema = Joi.object({
   amenities: Joi.array().items(Joi.object({ id: Joi.string().guid({ version: ['uuidv4'] }) }).unknown(true)).min(1).required(),
   pictures: Joi.array().items(ProductPicturesSchema).required(),
   details: Joi.array().items(ProductDetailsSchema).required(),
+  // UPDATE US-03 - KISUL
+  trip_detail: TripDetailSchema.optional(),
+  itineraries: Joi.array().items(ItinerarySchema).optional(),
+  schedules: Joi.array().items(PostTourSchedulePayloadSchema).optional(),
 });
 
 const UpdateProductsPayloadSchema = Joi.object({
@@ -58,6 +81,10 @@ const UpdateProductsPayloadSchema = Joi.object({
   availability: Joi.boolean().required(),
   price: Joi.number().required(),
   units: Joi.string().required(),
+  // UPDATE US-03 - KISUL
+  trip_detail: TripDetailSchema.optional(),
+  itineraries: Joi.array().items(ItinerarySchema).optional(),
+  schedules: Joi.array().items(PostTourSchedulePayloadSchema).optional(),
 });
 
 const UUIDParamsSchema = Joi.object({
@@ -127,6 +154,9 @@ const GetReviewsQuerySchema = Joi.object({
     .optional(),
 });
 
+
+
+
 module.exports = {
   ProductsPayloadSchema,
   UpdateProductsPayloadSchema,
@@ -143,4 +173,5 @@ module.exports = {
   ProductPoliciesSchema,
   UpdatePolicySchema,
   GetReviewsQuerySchema,
+  PostTourSchedulePayloadSchema,
 };

@@ -359,6 +359,17 @@ const routes = (handler) => [
   // },
 
   // NEXT DEVELOPMENT END
+  {
+    method: 'POST',
+    path: '/products/{id}/schedules',
+    handler: handler.postTourScheduleHandler,
+    config: {
+      auth: {
+        strategy: 'lombokhalalroom_jwt',
+        scope: 'admin',
+      },
+    },
+  },
 ];
 
 module.exports = routes;
