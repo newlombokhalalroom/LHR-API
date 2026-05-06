@@ -1,6 +1,5 @@
 const autoBind = require('auto-bind');
 const InvariantError = require('../../exceptions/InvariantError');
-const AuthorizationError = require('../../exceptions/AuthorizationError');
 
 class CardsHandler {
   constructor(cardsService, balancesService, withdrawalsService, withdrawalsValidator) {

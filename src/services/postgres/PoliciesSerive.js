@@ -51,7 +51,6 @@ class PoliciesService {
   }
 
   async getPolicyIdsByTitles(titles) {
-    const placeholders = titles.map((_, index) => `$${index + 1}`).join(', ');
     const queryText = `SELECT id, title FROM policies WHERE LOWER(title) IN (${titles.map((_, i) => `LOWER($${i + 1})`).join(', ')})`;
     const query = {
       text: queryText,

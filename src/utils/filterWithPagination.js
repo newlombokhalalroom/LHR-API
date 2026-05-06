@@ -16,8 +16,6 @@ module.exports = {
     const filter = params?.filter && JSON.parse(params.filter);
     const where = 'WHERE';
     const orderBy = 'ORDER BY';
-    const groupBy = 'GROUP BY';
-    const join = 'JOIN';
     const limit = 'LIMIT';
     const offset = 'OFFSET';
 

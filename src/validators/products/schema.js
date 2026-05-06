@@ -154,9 +154,6 @@ const GetReviewsQuerySchema = Joi.object({
     .optional(),
 });
 
-
-
-
 module.exports = {
   ProductsPayloadSchema,
   UpdateProductsPayloadSchema,

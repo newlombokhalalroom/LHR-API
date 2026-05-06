@@ -64,7 +64,7 @@ class ProductsHandler {
     this._productsValidator.validateProductsPayload(request.payload);
 
     const { id: credentialId } = request.auth.credentials;
-    const { id: clientId } = await this._clientsService.getClientIdbyOwnerId(credentialId);
+    await this._clientsService.getClientIdbyOwnerId(credentialId);
     const { id: productId } = request.params;
 
     const updatedProduct = await this._productsService.updateProductById(
@@ -77,12 +77,12 @@ class ProductsHandler {
       request.payload.amenities?.map((_item) => _item.id),
     );
 
-    const updatePictures = await this._productPicturesService.updateProductPictures(
+    await this._productPicturesService.updateProductPictures(
       productId,
       request.payload.pictures,
     );
 
-    const updateDetails = await this._productsDetailsService.updateProductDetail(
+    await this._productsDetailsService.updateProductDetail(
       productId,
       request.payload.details,
     );

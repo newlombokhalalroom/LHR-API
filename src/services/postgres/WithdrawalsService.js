@@ -42,7 +42,6 @@ class WithdrawalsService {
   }
 
   async getWithdrawals(userId = null, status = null, params = null) {
-    const pool = this._pool;
     const table = 'withdrawals';
     let query = `SELECT ${table}.* FROM ${table} LEFT JOIN cards ON cards.id = ${table}.card_id WHERE 1=1`;
 

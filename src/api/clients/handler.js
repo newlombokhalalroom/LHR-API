@@ -290,14 +290,17 @@ class ClientsHandler {
     const foundTitles = policyIds.map((p) => p.title.toLowerCase());
     const missingPolicies = policies.filter((p) => !foundTitles.includes(p.title.toLowerCase()));
 
-    for (const missing of missingPolicies) {
-      const newPolicy = await this._policiesService.addPolicy(typeId, {
+    const newPolicies = await Promise.all(
+      missingPolicies.map((missing) => this._policiesService.addPolicy(typeId, {
         title: missing.title,
         category: 'regular',
         description: missing.details || missing.title,
-      });
+      })),
+    );
+
+    newPolicies.forEach((newPolicy) => {
       policyIds.push({ id: newPolicy.id, title: newPolicy.title });
-    }
+    });
 
     const clientPolicies = policyIds.map((policy) => {
       const match = policies.find((obj) => obj.title.toLowerCase() === policy.title.toLowerCase());

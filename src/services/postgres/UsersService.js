@@ -5,7 +5,6 @@ const NotFoundError = require('../../exceptions/NotFoundError');
 const { createDatabasePool } = require('../../utils/config');
 const AuthenticationError = require('../../exceptions/AuthenticationError');
 const { filterParamsIntoQuery } = require('../../utils/filterWithPagination');
-const { buildUpdateQuery } = require('../../utils/buildUpdateQuery');
 
 class UsersService {
   constructor(cacheService, userRolesService) {
