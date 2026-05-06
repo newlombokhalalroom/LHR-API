@@ -84,6 +84,7 @@ class WithdrawalsService {
 
     return result.rows[0];
   }
+
   async updateWithdrawalStatusAtomic(withdrawalId, nextStatus) {
     const allowed = new Set(['pending', 'cancelled', 'success']);
     if (!allowed.has(nextStatus)) throw new InvariantError('Invalid status');

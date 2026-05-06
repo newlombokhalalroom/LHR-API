@@ -41,7 +41,7 @@ const routes = (handler) => [
       },
     },
   },
-  //temp balance route
+  // temp balance route
   {
     method: 'GET',
     path: '/super-admin/balance',

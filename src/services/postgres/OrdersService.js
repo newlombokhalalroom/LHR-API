@@ -181,21 +181,7 @@ class OrdersService {
 
     return result.rows[0];
   }
-  async putOrderStatus(status, orderId) {
-    const updatedDate = new Date();
-    const query = {
-      text: 'UPDATE orders SET status = $1, _updated_date = $2  WHERE id = $3 RETURNING id, status, _updated_date',
-      values: [status, updatedDate, orderId],
-    };
 
-    const result = await this._pool.query(query);
-
-    if (!result.rowCount) {
-      throw new InvariantError('Failed to update order status');
-    }
-
-    return result.rows[0];
-  }
   async getAllOrdersWithPagination({ page = 1, limit = 10 }) {
     const offset = (page - 1) * limit;
 
@@ -263,7 +249,7 @@ class OrdersService {
       throw new InvariantError('No valid fields provided to update');
     }
 
-    fields.push(`_updated_date = CURRENT_TIMESTAMP`);
+    fields.push('_updated_date = CURRENT_TIMESTAMP');
 
     const query = {
       text: `UPDATE orders SET ${fields.join(', ')} WHERE id = $${index} RETURNING *`,
@@ -278,6 +264,7 @@ class OrdersService {
 
     return result.rows[0];
   }
+
   async deleteOrderById(orderId) {
     const query = {
       text: 'DELETE FROM orders WHERE id = $1 RETURNING id',

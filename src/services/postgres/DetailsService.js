@@ -70,6 +70,7 @@ class DetailsService {
     }
     return result.rows;
   }
+
   async updateDetailById(id, { title, category_id, type_id }) {
     const fields = [];
     const values = [];
@@ -92,7 +93,7 @@ class DetailsService {
       throw new InvariantError('No valid fields to update');
     }
 
-    fields.push(`_updated_date = CURRENT_TIMESTAMP`);
+    fields.push('_updated_date = CURRENT_TIMESTAMP');
 
     const query = {
       text: `UPDATE details SET ${fields.join(
@@ -109,6 +110,7 @@ class DetailsService {
 
     return result.rows[0];
   }
+
   async deleteDetailById(id) {
     const query = {
       text: 'DELETE FROM details WHERE id = $1 RETURNING id',
