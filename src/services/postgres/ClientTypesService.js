@@ -75,6 +75,7 @@ class ClientTypesService {
     }
     return result.rows[0].title;
   }
+
   async updateClientType(id, { title, description }) {
     // Ambil data lama
     const existing = await this._pool.query({
@@ -108,6 +109,7 @@ class ClientTypesService {
 
     return result.rows[0];
   }
+
   async deleteClientType(id) {
     const query = {
       text: 'DELETE FROM types WHERE id = $1 RETURNING id',

@@ -64,6 +64,7 @@ class PoliciesService {
 
     return result.rows;
   }
+
   async deletePolicy(id) {
     const query = {
       text: 'DELETE FROM policies WHERE id = $1 RETURNING id',
@@ -74,6 +75,7 @@ class PoliciesService {
       throw new NotFoundError('Failed to delete policy. Id not found');
     }
   }
+
   async updatePolicy(id, payload) {
     const fields = [];
     const values = [];
@@ -100,7 +102,7 @@ class PoliciesService {
       throw new Error('No data to update');
     }
 
-    fields.push(`_updated_date = CURRENT_TIMESTAMP`);
+    fields.push('_updated_date = CURRENT_TIMESTAMP');
 
     const query = {
       text: `UPDATE policies SET ${fields.join(', ')} WHERE id = $${index} RETURNING *`,
