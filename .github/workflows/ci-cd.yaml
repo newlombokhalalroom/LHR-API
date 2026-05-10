@@ -1,4 +1,4 @@
-git cehcname: CI-CD Pipeline API
+name: CI-CD Pipeline API
 on:
   push:
     branches: ['production']
