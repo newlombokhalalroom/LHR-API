@@ -156,7 +156,7 @@ class ProductsService {
   async verifyClientProduct(arrayOfProductId, clientId) {
     const placeholders = arrayOfProductId.map((_, index) => `$${index + 1}`).join(', ');
     const queryText = `SELECT * FROM products WHERE id IN (${placeholders}) AND client_id = $${arrayOfProductId.length + 1
-    }`;
+      }`;
     const query = {
       text: queryText,
       values: [...arrayOfProductId, clientId],
@@ -282,7 +282,7 @@ class ProductsService {
       if (trip_detail) {
         const checkTrip = await client.query('SELECT id FROM trip_details WHERE product_id = $1', [productId]);
         if (checkTrip.rowCount > 0) {
-          await client.query('UPDATE trip_details SET trip_type = $1, _updated_date = $2 WHERE product_id = $3', [trip_detail.trip_type, updateAt, productId]);
+          await client.query('UPDATE trip_details SET trip_type = $1 WHERE product_id = $2', [trip_detail.trip_type, productId]);
         } else {
           await client.query('INSERT INTO trip_details (product_id, trip_type) VALUES ($1, $2)', [productId, trip_detail.trip_type]);
         }
@@ -290,22 +290,26 @@ class ProductsService {
 
       if (itineraries) {
         await client.query('DELETE FROM itineraries WHERE product_id = $1', [productId]);
-        const itineraryQuery = {
-          text: `INSERT INTO itineraries (product_id, day, time, activity, description) VALUES 
-            ${itineraries.map((_, i) => `($1, $${i * 4 + 2}, $${i * 4 + 3}, $${i * 4 + 4}, $${i * 4 + 5})`).join(', ')}`,
-          values: [productId, ...itineraries.flatMap((it) => [it.day, it.time, it.activity, it.description])],
-        };
-        await client.query(itineraryQuery);
+        if (itineraries.length > 0) {
+          const itineraryQuery = {
+            text: `INSERT INTO itineraries (product_id, day, time, activity, description) VALUES 
+              ${itineraries.map((_, i) => `($1, $${i * 4 + 2}, $${i * 4 + 3}, $${i * 4 + 4}, $${i * 4 + 5})`).join(', ')}`,
+            values: [productId, ...itineraries.flatMap((it) => [it.day, it.time, it.activity, it.description])],
+          };
+          await client.query(itineraryQuery);
+        }
       }
 
       if (schedules) {
         await client.query('DELETE FROM tour_schedules WHERE product_id = $1', [productId]);
-        const scheduleQuery = {
-          text: `INSERT INTO tour_schedules (product_id, total_quota, available_quota, departure_date, return_date) VALUES 
-            ${schedules.map((_, i) => `($1, $${i * 3 + 2}, $${i * 3 + 2}, $${i * 3 + 3}, $${i * 3 + 4})`).join(', ')}`,
-          values: [productId, ...schedules.flatMap((sch) => [sch.total_quota, sch.departure_date, sch.return_date])],
-        };
-        await client.query(scheduleQuery);
+        if (schedules.length > 0) {
+          const scheduleQuery = {
+            text: `INSERT INTO tour_schedules (product_id, total_quota, available_quota, departure_date, return_date) VALUES 
+              ${schedules.map((_, i) => `($1, $${i * 3 + 2}, $${i * 3 + 2}, $${i * 3 + 3}, $${i * 3 + 4})`).join(', ')}`,
+            values: [productId, ...schedules.flatMap((sch) => [sch.total_quota, sch.departure_date, sch.return_date])],
+          };
+          await client.query(scheduleQuery);
+        }
       }
 
       await client.query('COMMIT');
@@ -470,7 +474,7 @@ class ProductsService {
     }
     if (options.amenity) {
       baseQuery += ` AND pa.amenity_id IN (SELECT id FROM amenities WHERE title = $${values.length + 1
-      })`;
+        })`;
       values.push(options.amenity);
     }
     if (options.detailTitle && options.detailAmount) {

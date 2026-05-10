@@ -3,7 +3,7 @@ const Joi = require('joi');
 // UPDATE US-03 - KISUL
 const TripDetailSchema = Joi.object({
   trip_type: Joi.string().valid('Open trip', 'Private trip').required(),
-});
+}).unknown(true);
 
 // UPDATE US-03 - KISUL
 const ItinerarySchema = Joi.object({
@@ -11,13 +11,13 @@ const ItinerarySchema = Joi.object({
   time: Joi.string().required(),
   activity: Joi.string().required(),
   description: Joi.string().allow('', null).optional(),
-});
+}).unknown(true);
 
 const PostTourSchedulePayloadSchema = Joi.object({
   total_quota: Joi.number().integer().min(1).required(),
   departure_date: Joi.date().iso().required(),
   return_date: Joi.date().iso().min(Joi.ref('departure_date')).required(),
-});
+}).unknown(true);
 
 const ProductDetailsSchema = Joi.object({
   id: Joi.string()

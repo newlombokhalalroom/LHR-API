@@ -79,6 +79,11 @@ const ProductsDetailsService = require('./services/postgres/ProductsDetailsServi
 const ProductsOptionsService = require('./services/postgres/ProductsOptionsService');
 const ProductsValidator = require('./validators/products');
 
+// partner hotels
+const partnerHotels = require('./api/partnerHotels');
+const PartnerHotelsService = require('./services/postgres/PartnerHotelsService');
+const PartnerHotelsValidator = require('./validators/partnerHotels');
+
 // amenities
 const amenities = require('./api/amenities');
 const AmenitiesService = require('./services/postgres/AmenitiesService');
@@ -208,6 +213,7 @@ const init = async () => {
   const productsPoliciesService = new ProductsPoliciesService();
   const reviewsService = new ReviewsService();
   const advertisementsService = new AdvertisementsService();
+  const partnerHotelsService = new PartnerHotelsService();
 
   const server = Hapi.server({
     port: process.env.PORT,
@@ -428,6 +434,14 @@ const init = async () => {
       options: {
         advertisementsService,
         AdvertisementsValidator,
+      },
+    },
+    {
+      plugin: partnerHotels,
+      options: {
+        service: partnerHotelsService,
+        validator: PartnerHotelsValidator,
+        clientsService,
       },
     },
   ]);

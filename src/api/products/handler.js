@@ -104,6 +104,7 @@ class ProductsHandler {
           // UPDATE US-03 - KISUL
           trip_detail: request.payload.trip_detail || null,
           itineraries: request.payload.itineraries || [],
+          schedules: request.payload.schedules || [],
           // pictures: productPictures,
           // details: productDetails,
         },
@@ -154,6 +155,7 @@ class ProductsHandler {
         // UPDATE US-03 - KISUL
         trip_detail: request.payload.trip_detail || null,
         itineraries: request.payload.itineraries || [],
+        schedules: request.payload.schedules || [],
       },
     });
     response.code(201);
