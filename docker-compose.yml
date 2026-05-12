@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   api:
-    image: lombokhalalroom/lombok-halal-room-api:latest
-    container_name: lhr-api
+    image: lombokhalalroom/lombok-halal-room-api-jenkins:latest
+    container_name: lhr-api-jenkins
     restart: always
     ports:
       - '3000:3000'
