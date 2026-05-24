@@ -6,7 +6,7 @@ const routes = () => [
       h
         .response({
           status: 'success',
-          message: 'Server is healthy & running!',
+          message: 'Server is running and healthy!',
           timestamp: new Date().toISOString(),
         })
         .code(200),
