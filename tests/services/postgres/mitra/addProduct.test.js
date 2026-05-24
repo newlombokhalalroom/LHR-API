@@ -31,7 +31,7 @@ describe('ProductsService :: addProduct', () => {
     }));
   });
 
-  it('TCM-1B - ID client valid namun data produk tidak memenuhi ketentuan', async () => {
+  it('TCM-1B - ID client valid tapi data produk tidak memenuhi ketentuan', async () => {
     mockPool.query.mockResolvedValue({ rowCount: 0, rows: [] });
 
     await expect(service.addProduct('client-1', {})).rejects.toThrow('Failed to add product');
