@@ -5,7 +5,7 @@ const routes = () => [
     handler: (request, h) => h
       .response({
         status: 'success',
-        message: 'Server is healthy!',
+        message: 'Server is running and healthy!',
         timestamp: new Date().toISOString(),
       })
       .code(200),
