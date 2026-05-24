@@ -2,7 +2,7 @@ const routes = () => [
   {
     method: 'GET',
     path: '/health',
-    handler: (request, h) =>
+    handler: (request, h) => 
       h
         .response({
           status: 'success',
