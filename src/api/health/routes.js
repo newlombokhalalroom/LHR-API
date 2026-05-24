@@ -2,8 +2,7 @@ const routes = () => [
   {
     method: 'GET',
     path: '/health',
-    handler: (request, h) => 
-    h
+    handler: (request, h) => h
       .response({
         status: 'success',
         message: 'Server is running and healthy!',
