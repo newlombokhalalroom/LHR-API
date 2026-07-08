@@ -32,9 +32,9 @@ class OrderItemsService {
     const result = await Promise.all(
       orderItems.map(async (items) => {
         const addedOrderItems = await this._pool.query({
-          text: `INSERT INTO order_items (order_product_details_id, quantity, total, order_id)
-            VALUES($1, $2, $3, $4) RETURNING *`,
-          values: [items.orderProductDetailsId, items.quantity, items.total, orderId],
+          text: `INSERT INTO order_items (order_product_details_id, quantity, total, order_id, schedule_id, hotel_id, pickup_location)
+            VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+          values: [items.orderProductDetailsId, items.quantity, items.total, orderId, items.schedule_id, items.hotel_id, items.pickup_location],
         });
 
         const addedOptions = await Promise.all(items.options.map(async (option) => {
@@ -87,9 +87,20 @@ class OrderItemsService {
 
         const options = optionsResult.rows;
 
+        let hotelDetail = null;
+        if (orderItem.hotel_id) {
+          const hotelQuery = {
+            text: 'SELECT * FROM partner_hotels WHERE id = $1',
+            values: [orderItem.hotel_id],
+          };
+          const hotelResult = await this._pool.query(hotelQuery);
+          hotelDetail = hotelResult?.rows?.[0] || null;
+        }
+
         return {
           ...orderItem,
           options,
+          hotel: hotelDetail,
         };
       }),
     );

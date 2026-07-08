@@ -38,9 +38,25 @@ class OrdersService {
           text: 'SELECT picture FROM product_pictures WHERE product_id = $1',
           values: [_item.product_id],
         });
+        const reviewQuery = await this._pool.query({
+          text: 'SELECT * FROM reviews WHERE order_id = $1 AND product_id = $2',
+          values: [_order.id, _item.product_id],
+        });
+        
+        let hotelDetail = null;
+        if (_item.hotel_id) {
+          const hotelQuery = await this._pool.query({
+            text: 'SELECT * FROM partner_hotels WHERE id = $1',
+            values: [_item.hotel_id],
+          });
+          hotelDetail = hotelQuery?.rows?.[0] || null;
+        }
+
         return {
           ..._item,
           ...(prodPict?.rows?.[0] || {}),
+          review: reviewQuery?.rows?.[0] || null,
+          hotel: hotelDetail,
         };
       }),
     );

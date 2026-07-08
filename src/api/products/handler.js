@@ -246,15 +246,8 @@ class ProductsHandler {
     const { id: clientId } = await this._clientsService.getClientIdbyOwnerId(credentialId);
     const { id: productId } = request.params;
 
-    // make sure the product is exists
-    const {
-      result: { client_id: ownerId },
-    } = await this._productsService.getProductById(productId);
-
     // verify product access
-    if (ownerId !== clientId) {
-      throw new AuthorizationError('Forbidden access to this product');
-    }
+    await this._productsService.verifyClientAccess(productId, clientId);
 
     const deletedProduct = await this._productsService.deleteProduct(productId);
 

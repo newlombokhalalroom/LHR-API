@@ -48,6 +48,10 @@ class ProductsService {
       text: 'SELECT * FROM tour_schedules WHERE product_id = $1 ORDER BY departure_date',
       values: [productId],
     });
+    const _reviews = await this._pool.query({
+      text: 'SELECT r.*, u.username, (SELECT first_name FROM user_details WHERE user_id = r.user_id LIMIT 1) as first_name, (SELECT last_name FROM user_details WHERE user_id = r.user_id LIMIT 1) as last_name FROM reviews r LEFT JOIN users u ON u.id = r.user_id WHERE r.product_id = $1 ORDER BY r._created_date DESC',
+      values: [productId],
+    });
 
     if (clientId) {
       _client = await this._pool.query({
@@ -66,6 +70,7 @@ class ProductsService {
       itineraries: _itineraries?.rows || [],
       schedules: _schedules?.rows || [],
       client: _client?.rows?.[0] || [],
+      reviews: _reviews?.rows || [],
     };
   }
 
@@ -75,7 +80,7 @@ class ProductsService {
     const filterWithPagination = await filterParamsIntoQuery(
       table,
       params,
-      `SELECT ${table}.*, types.title as type FROM ${table} INNER JOIN clients ON clients.id = ${table}.client_id INNER JOIN types ON types.id = clients.type_id`,
+      `SELECT ${table}.*, types.title as type, trip_details.trip_type FROM ${table} INNER JOIN clients ON clients.id = ${table}.client_id INNER JOIN types ON types.id = clients.type_id LEFT JOIN trip_details ON trip_details.product_id = ${table}.id`,
     );
 
     if (!filterWithPagination?.result.rowCount) {
@@ -322,6 +327,7 @@ class ProductsService {
     }
   }
 
+  // US-04 KISUL
   async addTourSchedule(productId, { total_quota, departure_date, return_date }) {
     const query = {
       text: `INSERT INTO tour_schedules 

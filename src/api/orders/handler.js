@@ -22,6 +22,7 @@ class OrdersHandler {
     orderOptionsItemsService,
     sendEmailService,
     reviewsService,
+    partnerHotelsService,
   ) {
     this._ordersService = ordersService;
     this._orderItemsService = orderItemsService;
@@ -38,6 +39,7 @@ class OrdersHandler {
     this._orderOptionsItemsService = orderOptionsItemsService;
     this._sendEmailService = sendEmailService;
     this._reviewsService = reviewsService;
+    this._partnerHotelsService = partnerHotelsService;
 
     autoBind(this);
   }
@@ -60,11 +62,12 @@ class OrdersHandler {
 
     const products = await this._productsService.verifyClientProduct(filteredProductIds, clientId);
 
-    const quantity = daysCounter(startDate, endDate);
+    const dateQuantity = daysCounter(startDate, endDate);
 
     orderItems = await Promise.all(
       orderItems.map(async (item) => {
         const match = products.find((product) => item.productId === product.id);
+        const itemQuantity = item.quantity || dateQuantity;
         let orderOptions = [];
         let optionPrice = 0;
 
@@ -74,12 +77,27 @@ class OrdersHandler {
           optionPrice = parseFloat(additionalPrice.additional_price);
         }
 
+        // GUARD US-06: Schedule ID (Open Trip)
+        if (item.schedule_id) {
+          await this._productsService.reduceTourScheduleQuota(item.schedule_id, itemQuantity);
+        }
+
+        // GUARD US-07: Hotel ID (Private Trip)
+        if (item.hotel_id) {
+          await this._partnerHotelsService.verifyPartnerHotelOwner(item.hotel_id, clientId);
+          const hotel = await this._partnerHotelsService.getPartnerHotelById(item.hotel_id);
+          // Calculate hotel total based on nights. Assuming nights = dateQuantity - 1
+          const nights = Math.max(1, dateQuantity - 1);
+          const hotelPrice = parseFloat(hotel.price_per_night) * nights * Math.ceil(itemQuantity / 2);
+          optionPrice += hotelPrice;
+        }
+
         return {
           ...item,
-          quantity,
+          quantity: itemQuantity,
           orderOptions,
           optionTotalPrice: optionPrice,
-          total: match.price * quantity + optionPrice,
+          total: match.price * itemQuantity + optionPrice,
         };
       }),
     );
@@ -117,10 +135,17 @@ class OrdersHandler {
         options: item.orderOptions,
         optionsTotalPrice: item.optionTotalPrice,
         total: item.total,
+        schedule_id: item.schedule_id || null,
+        hotel_id: item.hotel_id || null,
+        pickup_location: item.pickup_location || null,
       };
     });
 
     const addedOrderItems = await this._orderItemsService.addOrderItems_(addedOrder.id, orderItems);
+
+    // Schedule 1-hour auto-cancel for unpaid orders
+    const paymentDuration = process.env.AUTO_CANCEL_PAYMENT_DURATION || 3600;
+    this.scheduleCancellation(addedOrder.id, paymentDuration, 'unpaid');
 
     const response = h.response({
       status: true,
@@ -241,8 +266,8 @@ class OrdersHandler {
     let paramsOrderItems = orderItems.map((item) => ({
       id: item.id,
       name: item.title,
-      price: parseFloat(item.price),
-      quantity: item.quantity,
+      price: parseFloat(item.total) / parseInt(item.quantity),
+      quantity: parseInt(item.quantity),
     }));
 
     if (optionsItems.length > 0) {
@@ -270,6 +295,9 @@ class OrdersHandler {
         last_name: userDetails.last_name,
         email: userDetails.email,
         phone: userDetails.phone,
+      },
+      callbacks: {
+        finish: process.env.MIDTRANS_FINISH_REDIRECT_URL || 'http://localhost:9000/booking',
       },
     };
 
@@ -326,7 +354,8 @@ class OrdersHandler {
       if (fraudStatus === 'accept') {
         await this._ordersService.putOrderStatus('process', orderId);
         console.log(`Order ${orderId} is Process.`);
-        this.scheduleCancellation(orderId, process.env.AUTO_CANCEL_DURATION);
+        const verificationDuration = process.env.AUTO_CANCEL_ORDER_DURATION || 86400;
+        this.scheduleCancellation(orderId, verificationDuration, 'process');
 
         // sending email
         this.sendInvoiceToUsersAndClient(user_details_id, client_details_id, orderId).catch(
@@ -336,7 +365,8 @@ class OrdersHandler {
     } else if (transactionStatus === 'settlement') {
       await this._ordersService.putOrderStatus('process', orderId);
       console.log(`Order ${orderId} is Process.`);
-      this.scheduleCancellation(orderId, process.env.AUTO_CANCEL_DURATION);
+      const verificationDuration = process.env.AUTO_CANCEL_ORDER_DURATION || 86400;
+      this.scheduleCancellation(orderId, verificationDuration, 'process');
 
       // sending email
       this.sendInvoiceToUsersAndClient(user_details_id, client_details_id, orderId).catch((error) => console.log(error));
@@ -356,20 +386,28 @@ class OrdersHandler {
     };
   }
 
-  scheduleCancellation(orderId, durationInSeconds) {
-    const cancelledDate = new Date(Date.now() + durationInSeconds * 1000); // 10000 ms
+  scheduleCancellation(orderId, durationInSeconds, targetStatus = 'process') {
+    const cancelledDate = new Date(Date.now() + durationInSeconds * 1000);
     schedule.scheduleJob(cancelledDate, async () => {
-      const {
-        result: { status: orderStatus, total, user_id: userId },
-      } = await this._ordersService.getOrderById(orderId);
-      if (orderStatus === 'process') {
-        await this._ordersService.putOrderStatus('cancelled', orderId);
-        console.log(`Order ${orderId} is Cancelled.`);
+      try {
+        const {
+          result: { status: orderStatus, total, user_id: userId },
+        } = await this._ordersService.getOrderById(orderId);
 
-        await this._balancesService.increaseUserBalance(total, userId);
-        console.log(`User ${userId} Balance is Increased.`);
-      } else {
-        console.log('Scheduled Cancellation is Not Executed.');
+        if (orderStatus === targetStatus) {
+          await this._ordersService.putOrderStatus('cancelled', orderId);
+          console.log(`Order ${orderId} (${targetStatus} timeout) is Cancelled.`);
+
+          // Only refund if it was ALREADY paid ('process')
+          if (targetStatus === 'process') {
+            await this._balancesService.increaseUserBalance(total, userId);
+            console.log(`User ${userId} Balance is Increased (Refund).`);
+          }
+        } else {
+          console.log(`Scheduled Cancellation for ${orderId} (${targetStatus}) is Not Executed because current status is ${orderStatus}.`);
+        }
+      } catch (error) {
+        console.log(`Error in scheduled cancellation for ${orderId}:`, error);
       }
     });
   }
@@ -431,6 +469,61 @@ class OrdersHandler {
       status: true,
       message: 'Order status updated successfully',
       result: order,
+    };
+  }
+
+  // Sandbox-only: Simulate Midtrans payment confirmation when webhook can't reach localhost
+  async sandboxPaymentConfirmHandler(request) {
+    this._ordersValidator.validateUUIDParams(request.params);
+    const { id: orderId } = request.params;
+    const { id: credentialId } = request.auth.credentials;
+
+    await this._ordersService.verifyOrderOwner(credentialId, orderId);
+    const {
+      status: order_status,
+      user_details_id,
+      client_details_id,
+    } = await this._ordersService.getInvoiceByOrderId(orderId);
+
+    if (order_status !== 'unpaid') {
+      throw new InvariantError(`Invalid order status: ${order_status}`);
+    }
+
+    await this._ordersService.putOrderStatus('process', orderId);
+    console.log(`[Sandbox] Order ${orderId} is Process.`);
+    const verificationDuration = process.env.AUTO_CANCEL_ORDER_DURATION || 86400;
+    this.scheduleCancellation(orderId, verificationDuration, 'process');
+
+    // sending email (non-blocking)
+    this.sendInvoiceToUsersAndClient(user_details_id, client_details_id, orderId).catch(
+      (error) => console.log(error),
+    );
+
+    return {
+      status: true,
+      message: 'Payment confirmed (sandbox mode)',
+    };
+  }
+
+  // Cancel an unpaid order
+  async cancelUnpaidOrderHandler(request) {
+    this._ordersValidator.validateUUIDParams(request.params);
+    const { id: orderId } = request.params;
+    const { id: credentialId } = request.auth.credentials;
+
+    await this._ordersService.verifyOrderOwner(credentialId, orderId);
+    const { status: order_status } = await this._ordersService.getInvoiceByOrderId(orderId);
+
+    if (order_status !== 'unpaid') {
+      throw new InvariantError(`Cannot cancel order with status: ${order_status}`);
+    }
+
+    await this._ordersService.putOrderStatus('cancelled', orderId);
+    console.log(`Order ${orderId} cancelled by user.`);
+
+    return {
+      status: true,
+      message: 'Order cancelled successfully',
     };
   }
 
@@ -505,6 +598,7 @@ class OrdersHandler {
 
   // eslint-disable-next-line class-methods-use-this
   filterLastObject(arr, days = 0, key = '_created_date') {
+    if (!days || days == 0) return arr;
     const currentDate = new Date();
     const lastDaysAgo = new Date(currentDate.getTime() - 30 * days * 24 * 60 * 60 * 1000); // Calculate date 30 days ago
 

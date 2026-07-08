@@ -16,10 +16,14 @@ const OrdersPayloadSchema = Joi.object({
         optionId: Joi.array()
           .items(Joi.string().guid({ version: 'uuidv4' }))
           .optional(),
-      }),
+        quantity: Joi.number().min(1).optional(),
+        schedule_id: Joi.string().guid({ version: 'uuidv4' }).optional(),
+        hotel_id: Joi.string().guid({ version: 'uuidv4' }).optional(),
+        pickup_location: Joi.string().allow('', null).optional(),
+      }).unknown(true)
     )
     .required(),
-});
+}).unknown(true);
 
 const PostReviewParamsSchema = Joi.object({
   orderId: Joi.string()

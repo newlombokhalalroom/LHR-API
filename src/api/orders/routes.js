@@ -84,6 +84,28 @@ const routes = (handler) => [
   },
   {
     method: 'PUT',
+    path: '/orders/{id}/sandbox-confirm',
+    handler: handler.sandboxPaymentConfirmHandler,
+    config: {
+      auth: {
+        strategy: 'lombokhalalroom_jwt',
+        scope: ['user'],
+      },
+    },
+  },
+  {
+    method: 'PUT',
+    path: '/orders/{id}/cancel',
+    handler: handler.cancelUnpaidOrderHandler,
+    config: {
+      auth: {
+        strategy: 'lombokhalalroom_jwt',
+        scope: ['user'],
+      },
+    },
+  },
+  {
+    method: 'PUT',
     path: '/orders/{id}/completed',
     handler: handler.putOrderCompletedStatusHandler,
     config: {

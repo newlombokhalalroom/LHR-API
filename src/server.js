@@ -379,6 +379,7 @@ const init = async () => {
         orderOptionsItemsService,
         sendEmailService,
         reviewsService,
+        partnerHotelsService,
       },
     },
     {
