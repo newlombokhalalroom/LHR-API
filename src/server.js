@@ -65,7 +65,7 @@ const ClientsFacilitiesValidator = require('./validators/clientsFacilities');
 // locations
 const LocationsService = require('./services/postgres/LocationsService');
 
-//advertisements
+// advertisements
 const advertisements = require('./api/advertisements');
 const AdvertisementsService = require('./services/postgres/AdvertisementsService');
 const AdvertisementsValidator = require('./validators/advertisements');
@@ -78,6 +78,11 @@ const ProductPicturesService = require('./services/postgres/ProductPicturesServi
 const ProductsDetailsService = require('./services/postgres/ProductsDetailsService');
 const ProductsOptionsService = require('./services/postgres/ProductsOptionsService');
 const ProductsValidator = require('./validators/products');
+
+// partner hotels
+const partnerHotels = require('./api/partnerHotels');
+const PartnerHotelsService = require('./services/postgres/PartnerHotelsService');
+const PartnerHotelsValidator = require('./validators/partnerHotels');
 
 // amenities
 const amenities = require('./api/amenities');
@@ -158,6 +163,9 @@ const ProductsPoliciesService = require('./services/postgres/ProductPoliciesServ
 // Reviews Service
 const ReviewsService = require('./services/postgres/ReviewsService');
 
+// Health
+const health = require('./api/health');
+
 const init = async () => {
   const cacheService = new CacheService();
   const userRolesService = new UserRolesService();
@@ -205,6 +213,7 @@ const init = async () => {
   const productsPoliciesService = new ProductsPoliciesService();
   const reviewsService = new ReviewsService();
   const advertisementsService = new AdvertisementsService();
+  const partnerHotelsService = new PartnerHotelsService();
 
   const server = Hapi.server({
     port: process.env.PORT,
@@ -249,6 +258,9 @@ const init = async () => {
     },
     {
       plugin: docs,
+    },
+    {
+      plugin: health,
     },
     {
       plugin: contacts,
@@ -367,6 +379,7 @@ const init = async () => {
         orderOptionsItemsService,
         sendEmailService,
         reviewsService,
+        partnerHotelsService,
       },
     },
     {
@@ -422,6 +435,14 @@ const init = async () => {
       options: {
         advertisementsService,
         AdvertisementsValidator,
+      },
+    },
+    {
+      plugin: partnerHotels,
+      options: {
+        service: partnerHotelsService,
+        validator: PartnerHotelsValidator,
+        clientsService,
       },
     },
   ]);

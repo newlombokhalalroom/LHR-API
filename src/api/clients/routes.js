@@ -54,6 +54,7 @@ const routes = (handler) => [
   },
   // restricted
   {
+    // US-15 Melakukan Pendaftaran Mitra
     method: 'POST',
     path: '/clients',
     handler: handler.postClientsHandler,

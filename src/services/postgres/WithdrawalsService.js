@@ -42,7 +42,6 @@ class WithdrawalsService {
   }
 
   async getWithdrawals(userId = null, status = null, params = null) {
-    const pool = this._pool;
     const table = 'withdrawals';
     let query = `SELECT ${table}.* FROM ${table} LEFT JOIN cards ON cards.id = ${table}.card_id WHERE 1=1`;
 
@@ -84,6 +83,7 @@ class WithdrawalsService {
 
     return result.rows[0];
   }
+
   async updateWithdrawalStatusAtomic(withdrawalId, nextStatus) {
     const allowed = new Set(['pending', 'cancelled', 'success']);
     if (!allowed.has(nextStatus)) throw new InvariantError('Invalid status');

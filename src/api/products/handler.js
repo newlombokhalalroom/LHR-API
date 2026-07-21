@@ -64,7 +64,7 @@ class ProductsHandler {
     this._productsValidator.validateProductsPayload(request.payload);
 
     const { id: credentialId } = request.auth.credentials;
-    const { id: clientId } = await this._clientsService.getClientIdbyOwnerId(credentialId);
+    await this._clientsService.getClientIdbyOwnerId(credentialId);
     const { id: productId } = request.params;
 
     const updatedProduct = await this._productsService.updateProductById(
@@ -77,12 +77,12 @@ class ProductsHandler {
       request.payload.amenities?.map((_item) => _item.id),
     );
 
-    const updatePictures = await this._productPicturesService.updateProductPictures(
+    await this._productPicturesService.updateProductPictures(
       productId,
       request.payload.pictures,
     );
 
-    const updateDetails = await this._productsDetailsService.updateProductDetail(
+    await this._productsDetailsService.updateProductDetail(
       productId,
       request.payload.details,
     );
@@ -101,6 +101,10 @@ class ProductsHandler {
         result: {
           ...updatedProduct,
           amenities: updateAmenities,
+          // UPDATE US-03 - KISUL
+          trip_detail: request.payload.trip_detail || null,
+          itineraries: request.payload.itineraries || [],
+          schedules: request.payload.schedules || [],
           // pictures: productPictures,
           // details: productDetails,
         },
@@ -108,15 +112,15 @@ class ProductsHandler {
       .code(201);
   }
 
+  //  US-03 Mengelola Data Paket Wisata & US-04 Mengelola Jadwal & Kuota (Open Trip) - fungsi post product
   async postProductsHandler(request, h) {
     // remove validation of id not allowed
     this._productsValidator.validateProductsPayload(request.payload);
 
     const { id: credentialId } = request.auth.credentials;
     const { id: clientId } = await this._clientsService.getClientIdbyOwnerId(credentialId);
-    const amenitiesId =
-      (!request.payload.amenities?.find((_item) => !_item.id) && request.payload.amenities) ||
-      (await this._amenitiesService.getAmenityIdByTitle(request.payload.amenities));
+    const amenitiesId = (!request.payload.amenities?.find((_item) => !_item.id) && request.payload.amenities)
+      || (await this._amenitiesService.getAmenityIdByTitle(request.payload.amenities));
     const arrayOfAmenitiesId = amenitiesId.map((obj) => obj.id);
     const productDetails = request.payload.details;
     const arrayOfDetailTitle = productDetails.map((obj) => obj.title);
@@ -149,12 +153,17 @@ class ProductsHandler {
         amenities: arrayOfProductAmenities,
         pictures: arrayOfPicture,
         details: arrayOfDetails,
+        // UPDATE US-03 - KISUL
+        trip_detail: request.payload.trip_detail || null,
+        itineraries: request.payload.itineraries || [],
+        schedules: request.payload.schedules || [],
       },
     });
     response.code(201);
     return response;
   }
 
+  // US-02 Melihat Detail Paket & Itinerary
   async getProductByIdHandler(request) {
     this._productsValidator.validateGetProductByIdParams(request.params);
     const { id } = request.params;
@@ -239,15 +248,8 @@ class ProductsHandler {
     const { id: clientId } = await this._clientsService.getClientIdbyOwnerId(credentialId);
     const { id: productId } = request.params;
 
-    // make sure the product is exists
-    const {
-      result: { client_id: ownerId },
-    } = await this._productsService.getProductById(productId);
-
     // verify product access
-    if (ownerId !== clientId) {
-      throw new AuthorizationError('Forbidden access to this product');
-    }
+    await this._productsService.verifyClientAccess(productId, clientId);
 
     const deletedProduct = await this._productsService.deleteProduct(productId);
 
@@ -961,6 +963,23 @@ class ProductsHandler {
   }
 
   // NEXT DEVELOPMENT END
+  async postTourScheduleHandler(request, h) {
+    this._productsValidator.validateTourSchedulePayload(request.payload);
+
+    const { id: credentialId } = request.auth.credentials;
+    const { id: clientId } = await this._clientsService.getClientIdbyOwnerId(credentialId);
+    const { id: productId } = request.params;
+
+    await this._productsService.verifyClientAccess(productId, clientId);
+
+    const scheduleId = await this._productsService.addTourSchedule(productId, request.payload);
+
+    return h.response({
+      status: true,
+      message: 'Jadwal tur berhasil ditambahkan',
+      data: { scheduleId },
+    }).code(201);
+  }
 }
 
 module.exports = ProductsHandler;

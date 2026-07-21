@@ -22,6 +22,7 @@ class OrdersHandler {
     orderOptionsItemsService,
     sendEmailService,
     reviewsService,
+    partnerHotelsService,
   ) {
     this._ordersService = ordersService;
     this._orderItemsService = orderItemsService;
@@ -38,6 +39,7 @@ class OrdersHandler {
     this._orderOptionsItemsService = orderOptionsItemsService;
     this._sendEmailService = sendEmailService;
     this._reviewsService = reviewsService;
+    this._partnerHotelsService = partnerHotelsService;
 
     autoBind(this);
   }
@@ -60,11 +62,12 @@ class OrdersHandler {
 
     const products = await this._productsService.verifyClientProduct(filteredProductIds, clientId);
 
-    const quantity = daysCounter(startDate, endDate);
+    const dateQuantity = daysCounter(startDate, endDate);
 
     orderItems = await Promise.all(
       orderItems.map(async (item) => {
         const match = products.find((product) => item.productId === product.id);
+        const itemQuantity = item.quantity || dateQuantity;
         let orderOptions = [];
         let optionPrice = 0;
 
@@ -74,12 +77,27 @@ class OrdersHandler {
           optionPrice = parseFloat(additionalPrice.additional_price);
         }
 
+        // GUARD US-06: Schedule ID (Open Trip)
+        if (item.schedule_id) {
+          await this._productsService.reduceTourScheduleQuota(item.schedule_id, itemQuantity);
+        }
+
+        // GUARD US-07: Hotel ID (Private Trip)
+        if (item.hotel_id) {
+          await this._partnerHotelsService.verifyPartnerHotelOwner(item.hotel_id, clientId);
+          const hotel = await this._partnerHotelsService.getPartnerHotelById(item.hotel_id);
+          // Calculate hotel total based on nights. Assuming nights = dateQuantity - 1
+          const nights = Math.max(1, dateQuantity - 1);
+          const hotelPrice = parseFloat(hotel.price_per_night) * nights * Math.ceil(itemQuantity / 2);
+          optionPrice += hotelPrice;
+        }
+
         return {
           ...item,
-          quantity,
+          quantity: itemQuantity,
           orderOptions,
           optionTotalPrice: optionPrice,
-          total: match.price * quantity + optionPrice,
+          total: match.price * itemQuantity + optionPrice,
         };
       }),
     );
@@ -117,10 +135,19 @@ class OrdersHandler {
         options: item.orderOptions,
         optionsTotalPrice: item.optionTotalPrice,
         total: item.total,
+        schedule_id: item.schedule_id || null,
+        hotel_id: item.hotel_id || null,
+        pickup_location: item.pickup_location || null,
+        participants: item.participants || null,
       };
     });
 
     const addedOrderItems = await this._orderItemsService.addOrderItems_(addedOrder.id, orderItems);
+
+    // Schedule 1-hour auto-cancel for unpaid orders
+    // US-09 Melakukan Pembayaran Online - timer, membatalkan pesanan secara otomatis ketika pesanan tidak dibayar dalam 1 jam
+    const paymentDuration = process.env.AUTO_CANCEL_PAYMENT_DURATION || 3600;
+    this.scheduleCancellation(addedOrder.id, paymentDuration, 'unpaid');
 
     const response = h.response({
       status: true,
@@ -164,7 +191,7 @@ class OrdersHandler {
 
     await this._ordersService.verifyOrderOwner(credentialId, orderId);
     const order = await this._ordersService.getOrderById(orderId);
-    const items = await this._orderItemsService.getOrderItems(orderId);
+    await this._orderItemsService.getOrderItems(orderId);
 
     return {
       status: true,
@@ -176,11 +203,13 @@ class OrdersHandler {
     this._ordersValidator.validateUUIDParams(request.params);
     let { id: credentialId } = request.auth.credentials;
 
+    // US-10 Melihat invoice pembayaran - verifikasi owner order
     if (request.auth.credentials.scope === 'admin') {
       const client = await this._clientsService.getClientIdbyOwnerId(credentialId);
       credentialId = client.id;
     }
 
+    // US-10 Melihat invoice pembayaran - Pengumpulan data order
     await this._ordersService.verifyOrderOwner(credentialId, request.params.id);
 
     const order = await this._ordersService.getInvoiceByOrderId(request.params.id);
@@ -204,6 +233,7 @@ class OrdersHandler {
     };
   }
 
+  // US-09 Melakukan Pembayaran – Permintaan token pembayaran
   async getMidSnapTokenHandler(request) {
     this._ordersValidator.validateUUIDParams(request.params);
     const { id: orderId } = request.params;
@@ -241,8 +271,8 @@ class OrdersHandler {
     let paramsOrderItems = orderItems.map((item) => ({
       id: item.id,
       name: item.title,
-      price: parseFloat(item.price),
-      quantity: item.quantity,
+      price: parseFloat(item.total) / parseInt(item.quantity),
+      quantity: parseInt(item.quantity),
     }));
 
     if (optionsItems.length > 0) {
@@ -270,6 +300,9 @@ class OrdersHandler {
         last_name: userDetails.last_name,
         email: userDetails.email,
         phone: userDetails.phone,
+      },
+      callbacks: {
+        finish: process.env.MIDTRANS_FINISH_REDIRECT_URL || 'http://localhost:9000/booking',
       },
     };
 
@@ -326,7 +359,8 @@ class OrdersHandler {
       if (fraudStatus === 'accept') {
         await this._ordersService.putOrderStatus('process', orderId);
         console.log(`Order ${orderId} is Process.`);
-        this.scheduleCancellation(orderId, process.env.AUTO_CANCEL_DURATION);
+        const verificationDuration = process.env.AUTO_CANCEL_ORDER_DURATION || 86400;
+        this.scheduleCancellation(orderId, verificationDuration, 'process');
 
         // sending email
         this.sendInvoiceToUsersAndClient(user_details_id, client_details_id, orderId).catch(
@@ -336,16 +370,15 @@ class OrdersHandler {
     } else if (transactionStatus === 'settlement') {
       await this._ordersService.putOrderStatus('process', orderId);
       console.log(`Order ${orderId} is Process.`);
-      this.scheduleCancellation(orderId, process.env.AUTO_CANCEL_DURATION);
+      const verificationDuration = process.env.AUTO_CANCEL_ORDER_DURATION || 86400;
+      this.scheduleCancellation(orderId, verificationDuration, 'process');
 
       // sending email
-      this.sendInvoiceToUsersAndClient(user_details_id, client_details_id, orderId).catch((error) =>
-        console.log(error),
-      );
+      this.sendInvoiceToUsersAndClient(user_details_id, client_details_id, orderId).catch((error) => console.log(error));
     } else if (
-      transactionStatus === 'cancel' ||
-      transactionStatus === 'deny' ||
-      transactionStatus === 'expire'
+      transactionStatus === 'cancel'
+      || transactionStatus === 'deny'
+      || transactionStatus === 'expire'
     ) {
       await this._ordersService.putOrderStatus('cancelled', orderId);
     } else if (transactionStatus === 'pending') {
@@ -358,20 +391,28 @@ class OrdersHandler {
     };
   }
 
-  scheduleCancellation(orderId, durationInSeconds) {
-    const cancelledDate = new Date(Date.now() + durationInSeconds * 1000); // 10000 ms
+  scheduleCancellation(orderId, durationInSeconds, targetStatus = 'process') {
+    const cancelledDate = new Date(Date.now() + durationInSeconds * 1000);
     schedule.scheduleJob(cancelledDate, async () => {
-      const {
-        result: { status: orderStatus, total, user_id: userId },
-      } = await this._ordersService.getOrderById(orderId);
-      if (orderStatus === 'process') {
-        await this._ordersService.putOrderStatus('cancelled', orderId);
-        console.log(`Order ${orderId} is Cancelled.`);
+      try {
+        const {
+          result: { status: orderStatus, total, user_id: userId },
+        } = await this._ordersService.getOrderById(orderId);
 
-        await this._balancesService.increaseUserBalance(total, userId);
-        console.log(`User ${userId} Balance is Increased.`);
-      } else {
-        console.log('Scheduled Cancellation is Not Executed.');
+        if (orderStatus === targetStatus) {
+          await this._ordersService.putOrderStatus('cancelled', orderId);
+          console.log(`Order ${orderId} (${targetStatus} timeout) is Cancelled.`);
+
+          // Only refund if it was ALREADY paid ('process')
+          if (targetStatus === 'process') {
+            await this._balancesService.increaseUserBalance(total, userId);
+            console.log(`User ${userId} Balance is Increased (Refund).`);
+          }
+        } else {
+          console.log(`Scheduled Cancellation for ${orderId} (${targetStatus}) is Not Executed because current status is ${orderStatus}.`);
+        }
+      } catch (error) {
+        console.log(`Error in scheduled cancellation for ${orderId}:`, error);
       }
     });
   }
@@ -400,6 +441,7 @@ class OrdersHandler {
     });
   }
 
+  // US-11 Memvalidasi Pesanan Masuk & US-12 Memperbarui Status Pesanan
   async putOrderConfirmationStatusHandler(request) {
     this._ordersValidator.validateUUIDParams({ id: request.params.id });
     this._ordersValidator.validateConfimationStatusParams({ status: request.params.status });
@@ -423,9 +465,11 @@ class OrdersHandler {
     const order = await this._ordersService.putOrderStatus(status, orderId);
 
     if (status === 'cancelled') {
+      // US-11 Memvalidasi Pesanan Masuk & US-12 Memperbarui Status Pesanan - Logika untuk pesanan ditolak dan pengembalian dana
       await this._balancesService.increaseUserBalance(total, userDetails.user_id);
       console.log(`User ${userDetails.user_id} Balance is Increased.`);
     } else {
+      // US-11 Memvalidasi Pesanan Masuk & US-12 Memperbarui Status Pesanan - Logika untuk pesanan diterima
       this.scheduleCompletion(orderId, endDate, credentialId, process.env.AUTO_COMPLETE_DURATION);
     }
 
@@ -436,6 +480,63 @@ class OrdersHandler {
     };
   }
 
+  // Sandbox-only: Simulate Midtrans payment confirmation when webhook can't reach localhost
+  // US-09  Melakukan Pembayaran Online - Logika update pembayaran menjadi sukses 
+  async sandboxPaymentConfirmHandler(request) {
+    this._ordersValidator.validateUUIDParams(request.params);
+    const { id: orderId } = request.params;
+    const { id: credentialId } = request.auth.credentials;
+
+    await this._ordersService.verifyOrderOwner(credentialId, orderId);
+    const {
+      status: order_status,
+      user_details_id,
+      client_details_id,
+    } = await this._ordersService.getInvoiceByOrderId(orderId);
+
+    if (order_status !== 'unpaid') {
+      throw new InvariantError(`Invalid order status: ${order_status}`);
+    }
+
+    await this._ordersService.putOrderStatus('process', orderId);
+    console.log(`[Sandbox] Order ${orderId} is Process.`);
+    const verificationDuration = process.env.AUTO_CANCEL_ORDER_DURATION || 86400;
+    this.scheduleCancellation(orderId, verificationDuration, 'process');
+
+    // sending email (non-blocking)
+    this.sendInvoiceToUsersAndClient(user_details_id, client_details_id, orderId).catch(
+      (error) => console.log(error),
+    );
+
+    return {
+      status: true,
+      message: 'Payment confirmed (sandbox mode)',
+    };
+  }
+
+  // Cancel an unpaid order
+  async cancelUnpaidOrderHandler(request) {
+    this._ordersValidator.validateUUIDParams(request.params);
+    const { id: orderId } = request.params;
+    const { id: credentialId } = request.auth.credentials;
+
+    await this._ordersService.verifyOrderOwner(credentialId, orderId);
+    const { status: order_status } = await this._ordersService.getInvoiceByOrderId(orderId);
+
+    if (order_status !== 'unpaid') {
+      throw new InvariantError(`Cannot cancel order with status: ${order_status}`);
+    }
+
+    await this._ordersService.putOrderStatus('cancelled', orderId);
+    console.log(`Order ${orderId} cancelled by user.`);
+
+    return {
+      status: true,
+      message: 'Order cancelled successfully',
+    };
+  }
+
+  // US-12 Memperbarui Status Pesanan - Logika penahanan saldo dan transaksi selesai
   async putOrderCompletedStatusHandler(request) {
     this._ordersValidator.validateUUIDParams({ id: request.params.id });
 
@@ -465,7 +566,9 @@ class OrdersHandler {
       throw new InvariantError('Invalid date');
     }
 
+    // US-12 Memperbarui Status Pesanan - Pencairan saldo mitra
     await this._balancesService.increaseUserBalance(total, owner_id);
+    // US-12 Memperbarui Status Pesanan - Logika transaksi selesai
     const order = await this._ordersService.putOrderStatus('done', orderId);
 
     return {
@@ -475,12 +578,14 @@ class OrdersHandler {
     };
   }
 
+  // US-14 Melihat Laporan Transaksi (Dashboard)
   async getUserOrdersSummaryHandler(request) {
     const { id: credentialId } = request.auth.credentials;
     const { lastmonths } = request.query;
 
     const { id: clientId } = await this._clientsService.getClientIdbyOwnerId(credentialId);
 
+    // US-14 Melihat Laporan Transaksi (Dashboard) - Pemanggilan API Orders untuk mengambil data seluruh pesanan berdasarkan owner id
     const orders = await this._ordersService.getOrders(request.query, clientId);
     const process = this.calculateOrderPercentage(orders.result, 'process', lastmonths);
     const progress = this.calculateOrderPercentage(orders.result, 'progress', lastmonths);
@@ -507,6 +612,7 @@ class OrdersHandler {
 
   // eslint-disable-next-line class-methods-use-this
   filterLastObject(arr, days = 0, key = '_created_date') {
+    if (!days || days == 0) return arr;
     const currentDate = new Date();
     const lastDaysAgo = new Date(currentDate.getTime() - 30 * days * 24 * 60 * 60 * 1000); // Calculate date 30 days ago
 
@@ -536,6 +642,7 @@ class OrdersHandler {
     return filteredOrder.reduce((total, obj) => total + (obj.total || 0), 0);
   }
 
+  // US-13 Memberikan Ulasan & Rating - Eksekusi pemanggilan API review/ulasan
   async postProductReviewHandler(request, h) {
     this._ordersValidator.validatePostReviewParams(request.params);
     this._ordersValidator.validatePostReviewPayload(request.payload);
@@ -577,6 +684,7 @@ class OrdersHandler {
     response.code(201);
     return response;
   }
+
   async getAllOrdersHandler(request, h) {
     const { page, limit } = request.query;
 
@@ -598,6 +706,7 @@ class OrdersHandler {
       })
       .code(200);
   }
+
   async putOrderHandler(request, h) {
     this._ordersValidator.validateUpdateOrderPayload(request.payload);
 
@@ -612,6 +721,7 @@ class OrdersHandler {
       })
       .code(200);
   }
+
   async deleteOrderHandler(request, h) {
     const { id } = request.params;
 
@@ -624,6 +734,7 @@ class OrdersHandler {
       })
       .code(200);
   }
+
   async testCacheHandler(request, h) {
     const cacheService = this._cacheService;
     const key = 'test-cache';
@@ -644,6 +755,7 @@ class OrdersHandler {
       });
     }
   }
+
   async getSuperAdminOrderByIdHandler(request, h) {
     this._ordersValidator.validateUUIDParams(request.params);
 

@@ -28,11 +28,11 @@ class ClientsService {
     ).rows?.[0];
 
     if (_product?.id) {
-      const _pictures = await this._pool.query({
+      const _productPictures = await this._pool.query({
         text: 'SELECT id, picture, title, description FROM product_pictures WHERE product_id = $1',
         values: [_product.id],
       });
-      _product.pictures = _pictures?.rows;
+      _product.pictures = _productPictures?.rows;
     }
 
     return {
@@ -95,6 +95,7 @@ class ClientsService {
     }
   }
 
+  // US-15 Melakukan Pendaftaran Mitra
   async addClient(
     owner_id,
     type_id,

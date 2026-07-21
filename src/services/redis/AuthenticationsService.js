@@ -1,4 +1,5 @@
 const InvariantError = require('../../exceptions/InvariantError');
+
 const PREFIX = 'RefreshToken';
 
 class AuthenticationsService {

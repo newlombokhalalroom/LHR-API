@@ -19,7 +19,7 @@ class OrdersService {
     });
 
     const _user = await this._pool.query({
-      text: 'SELECT ud.first_name, ud.last_name, u.picture FROM user_details ud LEFT JOIN users u ON u.id = ud.user_id LEFT JOIN orders o ON o.user_details_id = ud.id WHERE ud.user_id = $1 AND o.id = $2',
+      text: 'SELECT ud.first_name, ud.last_name, ud.email, ud.phone, u.picture FROM user_details ud LEFT JOIN users u ON u.id = ud.user_id LEFT JOIN orders o ON o.user_details_id = ud.id WHERE ud.user_id = $1 AND o.id = $2',
       values: [_order.user_id, _order.id],
     });
 
@@ -38,9 +38,26 @@ class OrdersService {
           text: 'SELECT picture FROM product_pictures WHERE product_id = $1',
           values: [_item.product_id],
         });
+        const reviewQuery = await this._pool.query({
+          text: 'SELECT * FROM reviews WHERE order_id = $1 AND product_id = $2',
+          values: [_order.id, _item.product_id],
+        });
+        
+        let hotelDetail = null;
+        if (_item.hotel_id) {
+          const hotelQuery = await this._pool.query({
+            text: 'SELECT * FROM partner_hotels WHERE id = $1',
+            values: [_item.hotel_id],
+          });
+          hotelDetail = hotelQuery?.rows?.[0] || null;
+        }
+
         return {
           ..._item,
           ...(prodPict?.rows?.[0] || {}),
+          review: reviewQuery?.rows?.[0] || null,
+          hotel: hotelDetail,
+          participants: _item.participants ? JSON.parse(_item.participants) : null,
         };
       }),
     );
@@ -181,21 +198,7 @@ class OrdersService {
 
     return result.rows[0];
   }
-  async putOrderStatus(status, orderId) {
-    const updatedDate = new Date();
-    const query = {
-      text: 'UPDATE orders SET status = $1, _updated_date = $2  WHERE id = $3 RETURNING id, status, _updated_date',
-      values: [status, updatedDate, orderId],
-    };
 
-    const result = await this._pool.query(query);
-
-    if (!result.rowCount) {
-      throw new InvariantError('Failed to update order status');
-    }
-
-    return result.rows[0];
-  }
   async getAllOrdersWithPagination({ page = 1, limit = 10 }) {
     const offset = (page - 1) * limit;
 
@@ -263,7 +266,7 @@ class OrdersService {
       throw new InvariantError('No valid fields provided to update');
     }
 
-    fields.push(`_updated_date = CURRENT_TIMESTAMP`);
+    fields.push('_updated_date = CURRENT_TIMESTAMP');
 
     const query = {
       text: `UPDATE orders SET ${fields.join(', ')} WHERE id = $${index} RETURNING *`,
@@ -278,6 +281,7 @@ class OrdersService {
 
     return result.rows[0];
   }
+
   async deleteOrderById(orderId) {
     const query = {
       text: 'DELETE FROM orders WHERE id = $1 RETURNING id',

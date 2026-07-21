@@ -12,6 +12,7 @@ class ProductsService {
     this._pool = createDatabasePool();
   }
 
+  // US-02 Melihat Detail Paket & Itinerary
   async getProductsDetailByProductId(productId, clientId) {
     let _client = null;
     const _amenities = await this._pool.query({
@@ -34,6 +35,24 @@ class ProductsService {
       text: 'SELECT pp.policy_id, p.title, p.category, p.description, pp.details FROM products_policies pp LEFT JOIN policies p ON pp.policy_id = p.id WHERE pp.product_id = $1',
       values: [productId],
     });
+    // UPDATE US-03 - KISUL
+    const _trip_detail = await this._pool.query({
+      text: 'SELECT * FROM trip_details WHERE product_id = $1',
+      values: [productId],
+    });
+    // UPDATE US-03 - KISUL
+    const _itineraries = await this._pool.query({
+      text: 'SELECT * FROM itineraries WHERE product_id = $1 ORDER BY day, time',
+      values: [productId],
+    });
+    const _schedules = await this._pool.query({
+      text: 'SELECT * FROM tour_schedules WHERE product_id = $1 ORDER BY departure_date',
+      values: [productId],
+    });
+    const _reviews = await this._pool.query({
+      text: 'SELECT r.*, u.username, (SELECT first_name FROM user_details WHERE user_id = r.user_id LIMIT 1) as first_name, (SELECT last_name FROM user_details WHERE user_id = r.user_id LIMIT 1) as last_name FROM reviews r LEFT JOIN users u ON u.id = r.user_id WHERE r.product_id = $1 ORDER BY r._created_date DESC',
+      values: [productId],
+    });
 
     if (clientId) {
       _client = await this._pool.query({
@@ -48,7 +67,11 @@ class ProductsService {
       amenities: _amenities?.rows || [],
       pictures: _pictures?.rows || [],
       policies: _policies?.rows || [],
+      trip_detail: _trip_detail?.rows?.[0] || null,
+      itineraries: _itineraries?.rows || [],
+      schedules: _schedules?.rows || [],
       client: _client?.rows?.[0] || [],
+      reviews: _reviews?.rows || [],
     };
   }
 
@@ -58,7 +81,7 @@ class ProductsService {
     const filterWithPagination = await filterParamsIntoQuery(
       table,
       params,
-      `SELECT ${table}.*, types.title as type FROM ${table} INNER JOIN clients ON clients.id = ${table}.client_id INNER JOIN types ON types.id = clients.type_id`,
+      `SELECT ${table}.*, types.title as type, trip_details.trip_type FROM ${table} INNER JOIN clients ON clients.id = ${table}.client_id INNER JOIN types ON types.id = clients.type_id LEFT JOIN trip_details ON trip_details.product_id = ${table}.id`,
     );
 
     if (!filterWithPagination?.result.rowCount) {
@@ -138,9 +161,8 @@ class ProductsService {
 
   async verifyClientProduct(arrayOfProductId, clientId) {
     const placeholders = arrayOfProductId.map((_, index) => `$${index + 1}`).join(', ');
-    const queryText = `SELECT * FROM products WHERE id IN (${placeholders}) AND client_id = $${
-      arrayOfProductId.length + 1
-    }`;
+    const queryText = `SELECT * FROM products WHERE id IN (${placeholders}) AND client_id = $${arrayOfProductId.length + 1
+      }`;
     const query = {
       text: queryText,
       values: [...arrayOfProductId, clientId],
@@ -154,19 +176,57 @@ class ProductsService {
     return result.rows;
   }
 
-  async addProduct(clientId, { id = uuid.v4(), title, description, availability, price, units }) {
-    const query = {
-      text: 'INSERT INTO products (id, client_id, title, description, availability, price, units) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, client_id, title, description, availability, price, units',
-      values: [id, clientId, title, description, availability, price, units],
-    };
+  // US-03 Mengelola Data Paket Wisata & US-04 Mengelola Jadwal & Kuota (Open Trip) - query tambah produk/paket
+  async addProduct(clientId, { id = uuid.v4(), title, description, availability, price, units, trip_detail, itineraries, schedules }) {
+    const client = await this._pool.connect();
+    try {
+      await client.query('BEGIN');
+      const query = {
+        text: 'INSERT INTO products (id, client_id, title, description, availability, price, units) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, client_id, title, description, availability, price, units',
+        values: [id, clientId, title, description, availability, price, units],
+      };
+      const result = await client.query(query);
 
-    const result = await this._pool.query(query);
+      if (!result.rowCount) {
+        throw new InvariantError('Failed to add product');
+      }
 
-    if (!result.rowCount) {
-      throw new InvariantError('Failed to add product');
+      const productId = result.rows[0].id;
+
+      if (trip_detail && trip_detail.trip_type) {
+        await client.query(
+          'INSERT INTO trip_details (product_id, trip_type) VALUES ($1, $2)',
+          [productId, trip_detail.trip_type],
+        );
+      }
+
+      if (itineraries && itineraries.length > 0) {
+        const itineraryQuery = {
+          text: `INSERT INTO itineraries (product_id, day, time, activity, description) VALUES 
+            ${itineraries.map((_, i) => `($1, $${i * 4 + 2}, $${i * 4 + 3}, $${i * 4 + 4}, $${i * 4 + 5})`).join(', ')}`,
+          values: [productId, ...itineraries.flatMap((it) => [it.day, it.time, it.activity, it.description])],
+        };
+        await client.query(itineraryQuery);
+      }
+
+      // US-03 Mengelola Data Paket Wisata & US-04 Mengelola Jadwal & Kuota (Open Trip) - pengecheckan dia ini open trip atau tidak untuk eksekusi penambahan jadwal/schedule
+      if (schedules && schedules.length > 0) {
+        const scheduleQuery = {
+          text: `INSERT INTO tour_schedules (product_id, total_quota, available_quota, departure_date, return_date) VALUES 
+            ${schedules.map((_, i) => `($1, $${i * 3 + 2}, $${i * 3 + 2}, $${i * 3 + 3}, $${i * 3 + 4})`).join(', ')}`,
+          values: [productId, ...schedules.flatMap((sch) => [sch.total_quota, sch.departure_date, sch.return_date])],
+        };
+        await client.query(scheduleQuery);
+      }
+
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
     }
-
-    return result.rows[0];
   }
 
   // todo: duplicate, missing result
@@ -212,53 +272,125 @@ class ProductsService {
 
   // etc
 
-  async verifyClientProduct(arrayOfProductId, clientId) {
-    const placeholders = arrayOfProductId.map((_, index) => `$${index + 1}`).join(', ');
-    const queryText = `SELECT * FROM products WHERE id IN (${placeholders}) AND client_id = $${
-      arrayOfProductId.length + 1
-    }`;
+  async updateProductById(productId, { title, description, availability, price, units, trip_detail, itineraries, schedules }) {
+    const client = await this._pool.connect();
+    try {
+      await client.query('BEGIN');
+      const updateAt = new Date();
+      const query = {
+        text: 'UPDATE products SET title = $1, description = $2, availability = $3, price = $4, units = $5, _updated_date = $6 WHERE id = $7 RETURNING id, title, description, availability, price, units',
+        values: [title, description, availability, price, units, updateAt, productId],
+      };
+      const result = await client.query(query);
+
+      if (!result.rowCount) {
+        throw new InvariantError('Failed to update product');
+      }
+
+      if (trip_detail) {
+        const checkTrip = await client.query('SELECT id FROM trip_details WHERE product_id = $1', [productId]);
+        if (checkTrip.rowCount > 0) {
+          await client.query('UPDATE trip_details SET trip_type = $1 WHERE product_id = $2', [trip_detail.trip_type, productId]);
+        } else {
+          await client.query('INSERT INTO trip_details (product_id, trip_type) VALUES ($1, $2)', [productId, trip_detail.trip_type]);
+        }
+      }
+
+      if (itineraries) {
+        await client.query('DELETE FROM itineraries WHERE product_id = $1', [productId]);
+        if (itineraries.length > 0) {
+          const itineraryQuery = {
+            text: `INSERT INTO itineraries (product_id, day, time, activity, description) VALUES 
+              ${itineraries.map((_, i) => `($1, $${i * 4 + 2}, $${i * 4 + 3}, $${i * 4 + 4}, $${i * 4 + 5})`).join(', ')}`,
+            values: [productId, ...itineraries.flatMap((it) => [it.day, it.time, it.activity, it.description])],
+          };
+          await client.query(itineraryQuery);
+        }
+      }
+
+      if (schedules) {
+        await client.query('DELETE FROM tour_schedules WHERE product_id = $1', [productId]);
+        if (schedules.length > 0) {
+          const scheduleQuery = {
+            text: `INSERT INTO tour_schedules (product_id, total_quota, available_quota, departure_date, return_date) VALUES 
+              ${schedules.map((_, i) => `($1, $${i * 3 + 2}, $${i * 3 + 2}, $${i * 3 + 3}, $${i * 3 + 4})`).join(', ')}`,
+            values: [productId, ...schedules.flatMap((sch) => [sch.total_quota, sch.departure_date, sch.return_date])],
+          };
+          await client.query(scheduleQuery);
+        }
+      }
+
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+  }
+
+  // US-04 KISUL
+  async addTourSchedule(productId, { total_quota, departure_date, return_date }) {
     const query = {
-      text: queryText,
-      values: [...arrayOfProductId, clientId],
+      text: `INSERT INTO tour_schedules 
+             (product_id, total_quota, available_quota, departure_date, return_date) 
+             VALUES ($1, $2, $2, $3, $4) RETURNING id`,
+      values: [productId, total_quota, departure_date, return_date],
     };
 
     const result = await this._pool.query(query);
-    if (result.rowCount < arrayOfProductId.length) {
-      throw new InvariantError('Invalid product for this client');
+
+    if (!result.rowCount) {
+      throw new InvariantError('Failed to add tour schedule');
     }
 
+    return result.rows[0].id;
+  }
+
+  async getTourSchedulesByProductId(productId) {
+    const query = {
+      text: 'SELECT * FROM tour_schedules WHERE product_id = $1 ORDER BY departure_date',
+      values: [productId],
+    };
+    const result = await this._pool.query(query);
     return result.rows;
   }
 
-  async addProduct(clientId, { id = uuid.v4(), title, description, availability, price, units }) {
-    const query = {
-      text: 'INSERT INTO products (id, client_id, title, description, availability, price, units) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, client_id, title, description, availability, price, units',
-      values: [id, clientId, title, description, availability, price, units],
-    };
+  async reduceTourScheduleQuota(scheduleId, quantity, client = null) {
+    const dbClient = client || await this._pool.connect();
+    try {
+      if (!client) await dbClient.query('BEGIN');
 
-    const result = await this._pool.query(query);
+      const checkQuotaQuery = {
+        text: 'SELECT available_quota, status FROM tour_schedules WHERE id = $1 FOR UPDATE',
+        values: [scheduleId],
+      };
+      const result = await dbClient.query(checkQuotaQuery);
 
-    if (!result.rowCount) {
-      throw new InvariantError('Failed to add product');
+      if (result.rowCount === 0) throw new NotFoundError('Schedule not found');
+
+      const { available_quota, status } = result.rows[0];
+
+      if (status !== 'ready') throw new InvariantError('Schedule is no longer available');
+      if (available_quota < quantity) throw new InvariantError('Insufficient quota');
+
+      const newQuota = available_quota - quantity;
+      const newStatus = newQuota === 0 ? 'full' : 'ready';
+
+      const updateQuotaQuery = {
+        text: 'UPDATE tour_schedules SET available_quota = $1, status = $2, _updated_at = NOW() WHERE id = $3',
+        values: [newQuota, newStatus, scheduleId],
+      };
+      await dbClient.query(updateQuotaQuery);
+
+      if (!client) await dbClient.query('COMMIT');
+    } catch (error) {
+      if (!client) await dbClient.query('ROLLBACK');
+      throw error;
+    } finally {
+      if (!client) dbClient.release();
     }
-
-    return result.rows[0];
-  }
-
-  async updateProductById(productId, { title, description, availability, price, units }) {
-    const updateAt = new Date();
-    const query = {
-      text: 'UPDATE products SET title = $1, description = $2, availability = $3, price = $4, units = $5, _updated_date = $6 WHERE id = $7 RETURNING id, title, description, availability, price, units',
-      values: [title, description, availability, price, units, updateAt, productId],
-    };
-
-    const result = await this._pool.query(query);
-
-    if (!result.rowCount) {
-      throw new InvariantError('Failed to update product');
-    }
-
-    return result.rows[0];
   }
 
   async verifyClientAccess(productId, clientId) {
@@ -350,9 +482,8 @@ class ProductsService {
       values.push(options.startDate, options.endDate);
     }
     if (options.amenity) {
-      baseQuery += ` AND pa.amenity_id IN (SELECT id FROM amenities WHERE title = $${
-        values.length + 1
-      })`;
+      baseQuery += ` AND pa.amenity_id IN (SELECT id FROM amenities WHERE title = $${values.length + 1
+        })`;
       values.push(options.amenity);
     }
     if (options.detailTitle && options.detailAmount) {

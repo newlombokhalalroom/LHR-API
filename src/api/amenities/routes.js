@@ -6,7 +6,7 @@ const routes = (handler) => [
     config: {
       auth: {
         strategy: 'lombokhalalroom_jwt',
-        scope: 'super-admin',
+        scope: ['super-admin', 'admin', 'hotel-partner', 'rent-partner'],
       },
     },
   },

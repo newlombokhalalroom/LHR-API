@@ -26,6 +26,7 @@ class ClientTypesHandler {
     response.code(201);
     return response;
   }
+
   async getAllClientTypesHandler(request, h) {
     const { title } = request.query;
     const types = await this._clientTypesService.getAllClientType(title);
@@ -37,6 +38,7 @@ class ClientTypesHandler {
       })
       .code(200);
   }
+
   async updateClientTypeHandler(request, h) {
     const { id } = request.params;
     const { title, description } = request.payload;
@@ -51,6 +53,7 @@ class ClientTypesHandler {
       })
       .code(200);
   }
+
   async deleteClientTypeHandler(request, h) {
     const { id } = request.params;
 

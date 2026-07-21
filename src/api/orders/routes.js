@@ -1,5 +1,6 @@
 const routes = (handler) => [
   {
+    // US-09 Melakukan Pembayaran Online - eksekusi pesanan kedalam database ketika pesanan sudah dibayar
     method: 'POST',
     path: '/orders/{clientId}',
     handler: handler.postOrdersHandler,
@@ -44,6 +45,7 @@ const routes = (handler) => [
     },
   },
   {
+    // US-10 Melihat invoice pembayaran - pemanggilan handler
     method: 'GET',
     path: '/orders/{id}/invoice',
     handler: handler.getUserInvoiceByOrderIdHandler,
@@ -54,7 +56,7 @@ const routes = (handler) => [
       },
     },
   },
-  // for testing midtrans request
+  // US-09 Melakukan Pembayaran – Panggil Midtrans
   {
     method: 'GET',
     path: '/orders/{id}/payment',
@@ -72,6 +74,7 @@ const routes = (handler) => [
     handler: handler.midtransNotificationHandler,
   },
   {
+    // US-11 Memvalidasi Pesanan Masuk & US-12 Memperbarui Status Pesanan - Pemanggilan API Konfirmasi Pesanan diterima atau ditolak
     method: 'PUT',
     path: '/orders/{id}/confirmation/{status}',
     handler: handler.putOrderConfirmationStatusHandler,
@@ -84,6 +87,29 @@ const routes = (handler) => [
   },
   {
     method: 'PUT',
+    path: '/orders/{id}/sandbox-confirm',
+    handler: handler.sandboxPaymentConfirmHandler,
+    config: {
+      auth: {
+        strategy: 'lombokhalalroom_jwt',
+        scope: ['user'],
+      },
+    },
+  },
+  {
+    method: 'PUT',
+    path: '/orders/{id}/cancel',
+    handler: handler.cancelUnpaidOrderHandler,
+    config: {
+      auth: {
+        strategy: 'lombokhalalroom_jwt',
+        scope: ['user'],
+      },
+    },
+  },
+  {
+    // US-12 Memperbarui Status Pesanan - Pemanggilan API Konfirmasi Pesananselesai
+    method: 'PUT',
     path: '/orders/{id}/completed',
     handler: handler.putOrderCompletedStatusHandler,
     config: {
@@ -94,6 +120,7 @@ const routes = (handler) => [
     },
   },
   {
+    // US-14 Melihat Laporan Transaksi (Dashboard)
     method: 'GET',
     path: '/orders/summaries',
     handler: handler.getUserOrdersSummaryHandler,
@@ -105,6 +132,7 @@ const routes = (handler) => [
     },
   },
   {
+    // US-13 Memberikan Ulasan & Rating - pemanggilan API review/ulasan
     method: 'POST',
     path: '/orders/{orderId}/reviews/{productId}',
     handler: handler.postProductReviewHandler,

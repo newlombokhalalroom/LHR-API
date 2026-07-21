@@ -51,8 +51,7 @@ class PoliciesService {
   }
 
   async getPolicyIdsByTitles(titles) {
-    const placeholders = titles.map((_, index) => `$${index + 1}`).join(', ');
-    const queryText = `SELECT id, title FROM policies WHERE title IN (${placeholders})`;
+    const queryText = `SELECT id, title FROM policies WHERE LOWER(title) IN (${titles.map((_, i) => `LOWER($${i + 1})`).join(', ')})`;
     const query = {
       text: queryText,
       values: titles,
@@ -64,6 +63,7 @@ class PoliciesService {
 
     return result.rows;
   }
+
   async deletePolicy(id) {
     const query = {
       text: 'DELETE FROM policies WHERE id = $1 RETURNING id',
@@ -74,6 +74,7 @@ class PoliciesService {
       throw new NotFoundError('Failed to delete policy. Id not found');
     }
   }
+
   async updatePolicy(id, payload) {
     const fields = [];
     const values = [];
@@ -100,7 +101,7 @@ class PoliciesService {
       throw new Error('No data to update');
     }
 
-    fields.push(`_updated_date = CURRENT_TIMESTAMP`);
+    fields.push('_updated_date = CURRENT_TIMESTAMP');
 
     const query = {
       text: `UPDATE policies SET ${fields.join(', ')} WHERE id = $${index} RETURNING *`,

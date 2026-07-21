@@ -20,6 +20,7 @@ module.exports = {
     orderOptionsItemsService,
     sendEmailService,
     reviewsService,
+    partnerHotelsService,
   }) => {
     const ordersHandler = new OrdersHandler(
       ordersService,
@@ -37,6 +38,7 @@ module.exports = {
       orderOptionsItemsService,
       sendEmailService,
       reviewsService,
+      partnerHotelsService,
     );
     server.route(routes(ordersHandler));
   },

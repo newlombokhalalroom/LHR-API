@@ -256,6 +256,7 @@ class UsersHandler {
         .code(400);
     }
   }
+
   async addUserByRoleHandler(request, h) {
     try {
       this._validator.validateUserCreatePayload(request.payload);

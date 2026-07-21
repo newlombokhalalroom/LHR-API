@@ -1,0 +1,21 @@
+{
+  "startDate": "2026-07-21T04:00:00.000Z",
+  "endDate": "2026-07-22T04:00:00.000Z",
+  "orderItems": [
+    {
+      "productId": "c58b7b84-1b25-4c2e-b322-da7e19a40362",
+      "quantity": 3,
+      "pickup_location": "Bandara",
+      "participants": [
+        {
+          "name": "fateh",
+          "phone": "08132673263"
+        },
+        {
+          "name": "Intan",
+          "phone": "1276127162716"
+        }
+      ]
+    }
+  ]
+}

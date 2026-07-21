@@ -20,6 +20,7 @@ const routes = (handler) => [
 
   // etc
   {
+    // US-03 Mengelola Data Paket Wisata & US-04 Mengelola Jadwal & Kuota (Open Trip) - rute endpoint nya
     method: 'POST',
     path: '/products',
     handler: handler.postProductsHandler,
@@ -91,6 +92,8 @@ const routes = (handler) => [
   //   path: '/clients/{id}/products',
   //   handler: handler.getClientProductsHandler,
   // },
+
+  // US-02 Melihat Detail Paket & Itinerary
   {
     method: 'GET',
     path: '/products/{id}',
@@ -301,6 +304,7 @@ const routes = (handler) => [
     },
   },
   {
+    // US-13 Memberikan Ulasan & Rating - pemanggilan API review/ulasan
     method: 'GET',
     path: '/products/{id}/reviews',
     handler: handler.getProductReviews,
@@ -317,48 +321,45 @@ const routes = (handler) => [
     },
   },
 
-  // NEXT DEVELOPMENT START
-
-  // {
-  //   method: 'POST',
-  //   path: '/products/{productId}/options',
-  //   handler: handler.postProductOptionsHandler,
-  //   config: {
-  //     auth: {
-  //       strategy: 'lombokhalalroom_jwt',
-  //       scope: 'admin',
-  //     },
-  //   },
-  // },
-  // {
-  //   method: 'PUT',
-  //   path: '/products/{productId}/options/{optionId}',
-  //   handler: handler.putProductOptionsHandler,
-  //   config: {
-  //     auth: {
-  //       strategy: 'lombokhalalroom_jwt',
-  //       scope: 'admin',
-  //     },
-  //   },
-  // },
-  // {
-  //   method: 'DELETE',
-  //   path: '/products/{productId}/options/{optionId}',
-  //   handler: handler.deleteProductOptionsHandler,
-  //   config: {
-  //     auth: {
-  //       strategy: 'lombokhalalroom_jwt',
-  //       scope: 'admin',
-  //     },
-  //   },
-  // },
-  // {
-  //   method: 'GET',
-  //   path: '/products/{productId}/options',
-  //   handler: handler.getProductOptionsByProductId,
-  // },
-
-  // NEXT DEVELOPMENT END
+  // Product Options
+  {
+    method: 'POST',
+    path: '/products/{productId}/options',
+    handler: handler.postProductOptionsHandler,
+    config: {
+      auth: {
+        strategy: 'lombokhalalroom_jwt',
+        scope: 'admin',
+      },
+    },
+  },
+  {
+    method: 'PUT',
+    path: '/products/{productId}/options/{optionId}',
+    handler: handler.putProductOptionsHandler,
+    config: {
+      auth: {
+        strategy: 'lombokhalalroom_jwt',
+        scope: 'admin',
+      },
+    },
+  },
+  {
+    method: 'DELETE',
+    path: '/products/{productId}/options/{optionId}',
+    handler: handler.deleteProductOptionsHandler,
+    config: {
+      auth: {
+        strategy: 'lombokhalalroom_jwt',
+        scope: 'admin',
+      },
+    },
+  },
+  {
+    method: 'GET',
+    path: '/products/{productId}/options',
+    handler: handler.getProductOptionsByProductId,
+  },
 ];
 
 module.exports = routes;

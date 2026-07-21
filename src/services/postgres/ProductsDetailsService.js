@@ -20,7 +20,7 @@ class ProductsDetailsService {
     )?.rows?.map((_item) => _item?.detail_id);
     const newDetails = arrayOfObjectsDetails.filter((_item) => !catchExisting?.includes(_item.id));
     const removedDetails = catchExisting.filter(
-      (_item) => !arrayOfObjectsDetails?.find((__item) => __item.id == _item),
+      (_item) => !arrayOfObjectsDetails?.find((__item) => __item.id === _item),
     );
 
     if (newDetails?.length > 0) {
@@ -56,8 +56,8 @@ class ProductsDetailsService {
       text: `INSERT INTO product_details (detail_id, amount, product_id) 
         VALUES 
         ${queryValues
-          .map((_, index) => `($${index * 3 + 1}, $${index * 3 + 2}, $${index * 3 + 3})`)
-          .join(', ')} 
+    .map((_, index) => `($${index * 3 + 1}, $${index * 3 + 2}, $${index * 3 + 3})`)
+    .join(', ')} 
         ON CONFLICT (product_id, detail_id) DO NOTHING  
         RETURNING detail_id, amount`,
       values: queryValues.flat(),
