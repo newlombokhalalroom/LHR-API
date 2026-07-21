@@ -101,7 +101,7 @@ class ClientsHandler {
   }
 
   // last
-
+  // US-15 Melakukan Pendaftaran Mitra
   async postClientsHandler(request, h) {
     this._clientsValidator.validateClientPayload(request.payload);
 

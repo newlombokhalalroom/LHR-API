@@ -112,6 +112,7 @@ class ProductsHandler {
       .code(201);
   }
 
+  //  US-03 Mengelola Data Paket Wisata & US-04 Mengelola Jadwal & Kuota (Open Trip) - fungsi post product
   async postProductsHandler(request, h) {
     // remove validation of id not allowed
     this._productsValidator.validateProductsPayload(request.payload);
@@ -162,6 +163,7 @@ class ProductsHandler {
     return response;
   }
 
+  // US-02 Melihat Detail Paket & Itinerary
   async getProductByIdHandler(request) {
     this._productsValidator.validateGetProductByIdParams(request.params);
     const { id } = request.params;

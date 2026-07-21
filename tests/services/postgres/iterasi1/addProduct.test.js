@@ -18,7 +18,7 @@ describe('[US03] Kelola Paket Wisata', () => {
     let service;
 
     beforeEach(() => {
-      global.__MOCK_POOL__ = mockPool;
+      global.__MOCK_POOL__ = mockPool;``
       service = new ProductsService();
       vi.clearAllMocks();
       // Mute console error from unhandled logic failures to keep UI clean

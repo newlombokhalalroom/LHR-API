@@ -19,7 +19,7 @@ class OrdersService {
     });
 
     const _user = await this._pool.query({
-      text: 'SELECT ud.first_name, ud.last_name, u.picture FROM user_details ud LEFT JOIN users u ON u.id = ud.user_id LEFT JOIN orders o ON o.user_details_id = ud.id WHERE ud.user_id = $1 AND o.id = $2',
+      text: 'SELECT ud.first_name, ud.last_name, ud.email, ud.phone, u.picture FROM user_details ud LEFT JOIN users u ON u.id = ud.user_id LEFT JOIN orders o ON o.user_details_id = ud.id WHERE ud.user_id = $1 AND o.id = $2',
       values: [_order.user_id, _order.id],
     });
 
@@ -57,6 +57,7 @@ class OrdersService {
           ...(prodPict?.rows?.[0] || {}),
           review: reviewQuery?.rows?.[0] || null,
           hotel: hotelDetail,
+          participants: _item.participants ? JSON.parse(_item.participants) : null,
         };
       }),
     );

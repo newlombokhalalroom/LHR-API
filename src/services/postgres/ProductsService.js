@@ -12,6 +12,7 @@ class ProductsService {
     this._pool = createDatabasePool();
   }
 
+  // US-02 Melihat Detail Paket & Itinerary
   async getProductsDetailByProductId(productId, clientId) {
     let _client = null;
     const _amenities = await this._pool.query({
@@ -175,6 +176,7 @@ class ProductsService {
     return result.rows;
   }
 
+  // US-03 Mengelola Data Paket Wisata & US-04 Mengelola Jadwal & Kuota (Open Trip) - query tambah produk/paket
   async addProduct(clientId, { id = uuid.v4(), title, description, availability, price, units, trip_detail, itineraries, schedules }) {
     const client = await this._pool.connect();
     try {
@@ -207,6 +209,7 @@ class ProductsService {
         await client.query(itineraryQuery);
       }
 
+      // US-03 Mengelola Data Paket Wisata & US-04 Mengelola Jadwal & Kuota (Open Trip) - pengecheckan dia ini open trip atau tidak untuk eksekusi penambahan jadwal/schedule
       if (schedules && schedules.length > 0) {
         const scheduleQuery = {
           text: `INSERT INTO tour_schedules (product_id, total_quota, available_quota, departure_date, return_date) VALUES 

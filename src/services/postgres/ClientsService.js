@@ -95,6 +95,7 @@ class ClientsService {
     }
   }
 
+  // US-15 Melakukan Pendaftaran Mitra
   async addClient(
     owner_id,
     type_id,

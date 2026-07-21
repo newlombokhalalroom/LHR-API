@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { createDatabasePool } = require('./src/utils/config');
 
+// US-15 Melakukan Pendaftaran Mitra - untuk menambahkan mitra dengan type tour agent
 async function seedTourAgent() {
   const pool = createDatabasePool();
   try {

@@ -17,8 +17,8 @@ const mockPool = {
 describe('[US15] Pendaftaran Mitra', () => {
   describe('UsersService', () => {
     let service;
-    
-    // Mock dependencies internal dari UsersService jika ada
+
+    // Mock dependencies internal dari UsersService 
     const mockUserRolesService = {
       getRoleId: vi.fn().mockResolvedValue('role-mitra-id')
     };
@@ -27,36 +27,36 @@ describe('[US15] Pendaftaran Mitra', () => {
       global.__MOCK_POOL__ = mockPool;
       service = new UsersService(mockUserRolesService);
       vi.clearAllMocks();
-      // Menyembunyikan console.error agar output terminal Vitest tetap bersih dan rapi (hijau semua)
-      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      vi.spyOn(console, 'error').mockImplementation(() => { });
     });
 
     it('[US15-001] Sukses daftar data valid', async () => {
-      const payload = { 
-        email: 'mitra1@mail.com', 
-        password: 'sahabat11', 
-        phone: '+62 123-4567-89098', 
-        npwp: '12.345.678.9-098.765', 
-        description: 'Ini contoh deskripsi' 
+      const payload = {
+        email: 'mitra1@mail.com',
+        password: 'sahabat11',
+        phone: '+62 123-4567-89098',
+        npwp: '12.345.678.9-098.765',
+        description: 'Ini contoh deskripsi'
       };
-      
+
       // Skenario: Username belum ada, Email belum terdaftar
       mockPool.query.mockResolvedValueOnce({ rowCount: 0 }); // check username
       mockPool.query.mockResolvedValueOnce({ rowCount: 0 }); // check email
-      
+
       // Transaction queries run on mockClient
       mockClient.query.mockResolvedValueOnce({ rows: [] }); // BEGIN
-      mockClient.query.mockResolvedValueOnce({ 
-        rowCount: 1, 
-        rows: [{ id: 'role-mitra-id' }] 
+      mockClient.query.mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ id: 'role-mitra-id' }]
       }); // check role
-      
+
       // Insert user
-      mockClient.query.mockResolvedValueOnce({ 
-        rowCount: 1, 
-        rows: [{ id: 'user-123' }] 
-      }); 
-      
+      mockClient.query.mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ id: 'user-123' }]
+      });
+
       // Default resolve for subsequent queries (contact, etc) and COMMIT
       mockClient.query.mockResolvedValue({ rowCount: 1, rows: [{ id: 'some-id' }] });
 
@@ -75,7 +75,7 @@ describe('[US15] Pendaftaran Mitra', () => {
 
     it('[US15-002] Gagal email terdaftar', async () => {
       const payload = { email: 'rizkitour12@gmail.com', password: 'password123' };
-      
+
       // Skenario: Username OK, Email SUDAH terdaftar (rowCount: 1)
       mockPool.query.mockReset();
       mockPool.query.mockResolvedValueOnce({ rowCount: 0 }); // username ok

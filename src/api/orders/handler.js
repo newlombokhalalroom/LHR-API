@@ -138,12 +138,14 @@ class OrdersHandler {
         schedule_id: item.schedule_id || null,
         hotel_id: item.hotel_id || null,
         pickup_location: item.pickup_location || null,
+        participants: item.participants || null,
       };
     });
 
     const addedOrderItems = await this._orderItemsService.addOrderItems_(addedOrder.id, orderItems);
 
     // Schedule 1-hour auto-cancel for unpaid orders
+    // US-09 Melakukan Pembayaran Online - timer, membatalkan pesanan secara otomatis ketika pesanan tidak dibayar dalam 1 jam
     const paymentDuration = process.env.AUTO_CANCEL_PAYMENT_DURATION || 3600;
     this.scheduleCancellation(addedOrder.id, paymentDuration, 'unpaid');
 
@@ -201,11 +203,13 @@ class OrdersHandler {
     this._ordersValidator.validateUUIDParams(request.params);
     let { id: credentialId } = request.auth.credentials;
 
+    // US-10 Melihat invoice pembayaran - verifikasi owner order
     if (request.auth.credentials.scope === 'admin') {
       const client = await this._clientsService.getClientIdbyOwnerId(credentialId);
       credentialId = client.id;
     }
 
+    // US-10 Melihat invoice pembayaran - Pengumpulan data order
     await this._ordersService.verifyOrderOwner(credentialId, request.params.id);
 
     const order = await this._ordersService.getInvoiceByOrderId(request.params.id);
@@ -229,6 +233,7 @@ class OrdersHandler {
     };
   }
 
+  // US-09 Melakukan Pembayaran – Permintaan token pembayaran
   async getMidSnapTokenHandler(request) {
     this._ordersValidator.validateUUIDParams(request.params);
     const { id: orderId } = request.params;
@@ -436,6 +441,7 @@ class OrdersHandler {
     });
   }
 
+  // US-11 Memvalidasi Pesanan Masuk & US-12 Memperbarui Status Pesanan
   async putOrderConfirmationStatusHandler(request) {
     this._ordersValidator.validateUUIDParams({ id: request.params.id });
     this._ordersValidator.validateConfimationStatusParams({ status: request.params.status });
@@ -459,9 +465,11 @@ class OrdersHandler {
     const order = await this._ordersService.putOrderStatus(status, orderId);
 
     if (status === 'cancelled') {
+      // US-11 Memvalidasi Pesanan Masuk & US-12 Memperbarui Status Pesanan - Logika untuk pesanan ditolak dan pengembalian dana
       await this._balancesService.increaseUserBalance(total, userDetails.user_id);
       console.log(`User ${userDetails.user_id} Balance is Increased.`);
     } else {
+      // US-11 Memvalidasi Pesanan Masuk & US-12 Memperbarui Status Pesanan - Logika untuk pesanan diterima
       this.scheduleCompletion(orderId, endDate, credentialId, process.env.AUTO_COMPLETE_DURATION);
     }
 
@@ -473,6 +481,7 @@ class OrdersHandler {
   }
 
   // Sandbox-only: Simulate Midtrans payment confirmation when webhook can't reach localhost
+  // US-09  Melakukan Pembayaran Online - Logika update pembayaran menjadi sukses 
   async sandboxPaymentConfirmHandler(request) {
     this._ordersValidator.validateUUIDParams(request.params);
     const { id: orderId } = request.params;
@@ -527,6 +536,7 @@ class OrdersHandler {
     };
   }
 
+  // US-12 Memperbarui Status Pesanan - Logika penahanan saldo dan transaksi selesai
   async putOrderCompletedStatusHandler(request) {
     this._ordersValidator.validateUUIDParams({ id: request.params.id });
 
@@ -556,7 +566,9 @@ class OrdersHandler {
       throw new InvariantError('Invalid date');
     }
 
+    // US-12 Memperbarui Status Pesanan - Pencairan saldo mitra
     await this._balancesService.increaseUserBalance(total, owner_id);
+    // US-12 Memperbarui Status Pesanan - Logika transaksi selesai
     const order = await this._ordersService.putOrderStatus('done', orderId);
 
     return {
@@ -566,12 +578,14 @@ class OrdersHandler {
     };
   }
 
+  // US-14 Melihat Laporan Transaksi (Dashboard)
   async getUserOrdersSummaryHandler(request) {
     const { id: credentialId } = request.auth.credentials;
     const { lastmonths } = request.query;
 
     const { id: clientId } = await this._clientsService.getClientIdbyOwnerId(credentialId);
 
+    // US-14 Melihat Laporan Transaksi (Dashboard) - Pemanggilan API Orders untuk mengambil data seluruh pesanan berdasarkan owner id
     const orders = await this._ordersService.getOrders(request.query, clientId);
     const process = this.calculateOrderPercentage(orders.result, 'process', lastmonths);
     const progress = this.calculateOrderPercentage(orders.result, 'progress', lastmonths);
@@ -628,6 +642,7 @@ class OrdersHandler {
     return filteredOrder.reduce((total, obj) => total + (obj.total || 0), 0);
   }
 
+  // US-13 Memberikan Ulasan & Rating - Eksekusi pemanggilan API review/ulasan
   async postProductReviewHandler(request, h) {
     this._ordersValidator.validatePostReviewParams(request.params);
     this._ordersValidator.validatePostReviewPayload(request.payload);

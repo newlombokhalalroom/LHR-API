@@ -32,9 +32,9 @@ class OrderItemsService {
     const result = await Promise.all(
       orderItems.map(async (items) => {
         const addedOrderItems = await this._pool.query({
-          text: `INSERT INTO order_items (order_product_details_id, quantity, total, order_id, schedule_id, hotel_id, pickup_location)
-            VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-          values: [items.orderProductDetailsId, items.quantity, items.total, orderId, items.schedule_id, items.hotel_id, items.pickup_location],
+          text: `INSERT INTO order_items (order_product_details_id, quantity, total, order_id, schedule_id, hotel_id, pickup_location, participants)
+            VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+          values: [items.orderProductDetailsId, items.quantity, items.total, orderId, items.schedule_id, items.hotel_id, items.pickup_location, items.participants ? JSON.stringify(items.participants) : null],
         });
 
         const addedOptions = await Promise.all(items.options.map(async (option) => {
@@ -101,6 +101,7 @@ class OrderItemsService {
           ...orderItem,
           options,
           hotel: hotelDetail,
+          participants: orderItem.participants ? JSON.parse(orderItem.participants) : [],
         };
       }),
     );
